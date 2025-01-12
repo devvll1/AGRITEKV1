@@ -30,7 +30,7 @@ class _ProfilePageState extends State<ProfilePage> {
     'Crop Farmer',
     'Livestock Farmer',
     'Aquaculture Farmer',
-    'Agroforestry Farmer',
+    'Forestry Farmer',
     'Mixed Farmer'
   ];
 

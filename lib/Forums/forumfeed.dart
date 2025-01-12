@@ -1,7 +1,12 @@
+// ignore_for_file: prefer_const_constructors
+
+import 'package:agritek/Forums/newpost.dart';
+import 'package:agritek/Forums/viewpost.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:timeago/timeago.dart' as timeago;
+import 'package:intl/intl.dart';
 
 class ForumsPage extends StatefulWidget {
   const ForumsPage({Key? key}) : super(key: key);
@@ -11,15 +16,8 @@ class ForumsPage extends StatefulWidget {
 }
 
 class _ForumsPageState extends State<ForumsPage> {
-  final TextEditingController _postController = TextEditingController();
   final User? user = FirebaseAuth.instance.currentUser;
   final Map<String, String> _userCache = {};
-
-  @override
-  void dispose() {
-    _postController.dispose();
-    super.dispose();
-  }
 
   Future<String> _getFullName(String? userId) async {
     if (userId == null) return 'Anonymous';
@@ -29,28 +27,19 @@ class _ForumsPageState extends State<ForumsPage> {
     }
 
     try {
-      final userDoc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
+      final userDoc =
+          await FirebaseFirestore.instance.collection('users').doc(userId).get();
       if (userDoc.exists) {
         final data = userDoc.data();
-        final fullName = '${data?['firstName'] ?? ''} ${data?['lastName'] ?? ''}'.trim();
+        final firstName = data?['firstName'] ?? '';
+        final lastName = data?['lastName'] ?? '';
+        final fullName = '$firstName $lastName'.trim();
         _userCache[userId] = fullName;
         return fullName.isNotEmpty ? fullName : 'Anonymous';
       }
     } catch (e) {}
 
     return 'Anonymous';
-  }
-
-  Future<void> _addPost() async {
-    if (_postController.text.trim().isEmpty) return;
-
-    await FirebaseFirestore.instance.collection('posts').add({
-      'content': _postController.text.trim(),
-      'author': user?.uid,
-      'timestamp': FieldValue.serverTimestamp(),
-      'likes': [],
-    });
-    _postController.clear();
   }
 
   Future<void> _togglePostLike(String postId, List<dynamic> currentLikes) async {
@@ -70,288 +59,190 @@ class _ForumsPageState extends State<ForumsPage> {
     }
   }
 
-  void _showCommentsModal(String postId, String postContent, List<dynamic> postLikes) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (context) => CommentsModal(
-        postId: postId,
-        postContent: postContent,
-        postLikes: postLikes,
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Forums')),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _postController,
-                    decoration: const InputDecoration(hintText: 'Write a post...'),
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.send),
-                  onPressed: _addPost,
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('posts')
-                  .orderBy('timestamp', descending: true)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+      appBar: AppBar(title: const Text('Community Forums')),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('posts')
+            .orderBy('timestamp', descending: true)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Center(child: CupertinoActivityIndicator());
+          }
 
-                final posts = snapshot.data!.docs;
+          final posts = snapshot.data!.docs;
 
-                return ListView.builder(
-                  itemCount: posts.length,
-                  itemBuilder: (context, index) {
-                    final post = posts[index];
-                    final postData = post.data() as Map<String, dynamic>;
-                    final postTimestamp = postData['timestamp'] as Timestamp?;
-                    final postTime = postTimestamp != null
-                        ? timeago.format(postTimestamp.toDate())
-                        : '';
-                    final postLikes = postData['likes'] ?? [];
+          return ListView.builder(
+            itemCount: posts.length,
+            itemBuilder: (context, index) {
+              final post = posts[index];
+              final postData = post.data() as Map<String, dynamic>;
+              final postTimestamp = postData['timestamp'] as Timestamp?;
+              final postTime = postTimestamp != null
+                  ? DateFormat('MMM d, y h:mm a').format(postTimestamp.toDate())
+                  : '';
+              final postLikes = postData['likes'] ?? [];
 
-                    return FutureBuilder<String>(
-                      future: _getFullName(postData['author']),
-                      builder: (context, snapshot) {
-                        final authorName = snapshot.data ?? 'Anonymous';
+              return FutureBuilder<String>(
+                future: _getFullName(postData['author']),
+                builder: (context, snapshot) {
+                  final authorName = snapshot.data ?? 'Anonymous';
 
-                        return Card(
-                          margin: const EdgeInsets.all(8.0),
-                          child: ListTile(
-                            title: Text(postData['content']),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        CupertinoPageRoute(
+                          builder: (context) => ViewPostPage(
+                            postId: post.id,
+                            title: postData['title'] ?? '',
+                            content: postData['content'] ?? '',
+                            category: postData['category'] ?? '',
+                            author: authorName,
+                            time: postTime,
+                            likes: postLikes,
+                            imageUrl: '', 
+                            comments: [],
+                          ),
+                        ),
+                      );
+                    },
+                    child: Card(
+                      margin: const EdgeInsets.symmetric(
+                          horizontal: 20.0, vertical: 10.0),
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (postData['imageUrl'] != null &&
+                                postData['imageUrl'].isNotEmpty)
+                              Container(
+                                width: double.infinity,
+                                height: 200,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(8),
+                                  image: DecorationImage(
+                                    image: NetworkImage(postData['imageUrl'] ?? ''),
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              ),
+                            SizedBox(height: 8),
+                            Text('Author: $authorName',
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold, fontSize: 14)),
+                            Text('Posted on: $postTime',
+                                style: const TextStyle(
+                                    color: Colors.grey, fontSize: 12)),
+                            if (postData['category'] != null)
+                              Text('Category: ${postData['category']}',
+                                  style: const TextStyle(
+                                      fontStyle: FontStyle.italic,
+                                      fontSize: 12,
+                                      color: Colors.grey)),
+                            Divider(color: Colors.grey.shade400, thickness: 1),
+                            Text(postData['title'] ?? 'No Title',
+                                style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black)),
+                            SizedBox(height: 4),
+                            Text(
+                              postData['content'] ?? 'No Content Available',
+                              style: const TextStyle(fontSize: 14),
+                              maxLines: 12,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Divider(color: Colors.grey.shade400, thickness: 1),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text('Posted by $authorName $postTime'),
                                 Row(
                                   children: [
                                     IconButton(
                                       icon: Icon(
                                         postLikes.contains(user?.uid)
-                                            ? Icons.thumb_up
-                                            : Icons.thumb_up_alt_outlined,
+                                            ? CupertinoIcons.hand_thumbsup_fill
+                                            : CupertinoIcons.hand_thumbsup,
                                         color: postLikes.contains(user?.uid)
-                                            ? Colors.blue
-                                            : Colors.grey,
+                                            ? CupertinoColors.activeBlue
+                                            : CupertinoColors.inactiveGray,
                                       ),
-                                      onPressed: () => _togglePostLike(post.id, postLikes),
+                                      onPressed: () =>
+                                          _togglePostLike(post.id, postLikes),
                                     ),
-                                    Text('${postLikes.length}'),
+                                    Text('${postLikes.length} Likes'),
+                                  ],
+                                ),
+                                Row(
+                                  children: [
+                                    Icon(
+                                      CupertinoIcons.chat_bubble_text,
+                                      color: CupertinoColors.inactiveGray,
+                                    ),
+                                    SizedBox(width: 4),
+                                      StreamBuilder<QuerySnapshot>(
+                                        stream: FirebaseFirestore.instance
+                                            .collection('posts')
+                                            .doc(post.id)
+                                            .collection('comments')
+                                            .snapshots(),
+                                        builder: (context, commentSnapshot) {
+
+                                          final commentCount = commentSnapshot.data?.docs.length ?? 0;
+
+                                          return Text(
+                                            '$commentCount Comments',
+                                            style: const TextStyle(fontSize: 13),
+                                          );
+                                        },
+                                      ),
+
                                   ],
                                 ),
                               ],
                             ),
-                            trailing: const Icon(Icons.comment),
-                            onTap: () => _showCommentsModal(post.id, postData['content'], postLikes),
-                          ),
-                        );
-                      },
-                    );
-                  },
-                );
-              },
-            ),
-          ),
-        ],
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+          );
+        },
       ),
-    );
-  }
-}
-
-class CommentsModal extends StatefulWidget {
-  final String postId;
-  final String postContent;
-  final List<dynamic> postLikes;
-
-  const CommentsModal({
-    Key? key,
-    required this.postId,
-    required this.postContent,
-    required this.postLikes,
-  }) : super(key: key);
-
-  @override
-  _CommentsModalState createState() => _CommentsModalState();
-}
-
-class _CommentsModalState extends State<CommentsModal> {
-  final TextEditingController _commentController = TextEditingController();
-  final User? user = FirebaseAuth.instance.currentUser;
-  final Map<String, String> _userCache = {};
-
-  @override
-  void dispose() {
-    _commentController.dispose();
-    super.dispose();
-  }
-
-  Future<String> _getFullName(String? userId) async {
-    if (userId == null) return 'Anonymous';
-
-    if (_userCache.containsKey(userId)) {
-      return _userCache[userId]!;
-    }
-
-    try {
-      final userDoc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
-      if (userDoc.exists) {
-        final data = userDoc.data();
-        final fullName = '${data?['firstName'] ?? ''} ${data?['lastName'] ?? ''}'.trim();
-        _userCache[userId] = fullName;
-        return fullName.isNotEmpty ? fullName : 'Anonymous';
-      }
-    } catch (e) {}
-
-    return 'Anonymous';
-  }
-
-  Future<void> _addComment() async {
-    if (_commentController.text.trim().isEmpty) return;
-
-    await FirebaseFirestore.instance
-        .collection('posts')
-        .doc(widget.postId)
-        .collection('comments')
-        .add({
-      'content': _commentController.text.trim(),
-      'author': user?.uid,
-      'timestamp': FieldValue.serverTimestamp(),
-      'likes': [],
-    });
-    _commentController.clear();
-  }
-
-  Future<void> _toggleCommentLike(String commentId, List<dynamic> currentLikes) async {
-    final userId = user?.uid;
-    if (userId == null) return;
-
-    final commentDoc = FirebaseFirestore.instance
-        .collection('posts')
-        .doc(widget.postId)
-        .collection('comments')
-        .doc(commentId);
-
-    if (currentLikes.contains(userId)) {
-      await commentDoc.update({
-        'likes': FieldValue.arrayRemove([userId]),
-      });
-    } else {
-      await commentDoc.update({
-        'likes': FieldValue.arrayUnion([userId]),
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: MediaQuery.of(context).viewInsets,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Text(
-              widget.postContent,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+      floatingActionButton: CupertinoButton(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        color: CupertinoColors.activeBlue,
+        borderRadius: BorderRadius.circular(30),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            Icon(CupertinoIcons.add, color: CupertinoColors.white),
+            SizedBox(width: 5),
+            Text('New Post', style: TextStyle(color: CupertinoColors.white)),
+          ],
+        ),
+        onPressed: () async {
+          final result = await Navigator.push(
+            context,
+            CupertinoPageRoute(
+              builder: (context) => const NewPostPage(),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _commentController,
-                    decoration: const InputDecoration(hintText: 'Write a comment...'),
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.send),
-                  onPressed: _addComment,
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('posts')
-                  .doc(widget.postId)
-                  .collection('comments')
-                  .orderBy('timestamp', descending: false)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+          );
 
-                final comments = snapshot.data!.docs;
-
-                return ListView.builder(
-                  itemCount: comments.length,
-                  itemBuilder: (context, index) {
-                    final comment = comments[index];
-                    final commentData = comment.data() as Map<String, dynamic>;
-                    final commentLikes = commentData['likes'] ?? [];
-                    final commentTimestamp = commentData['timestamp'] as Timestamp?;
-                    final commentTime = commentTimestamp != null
-                        ? timeago.format(commentTimestamp.toDate())
-                        : '';
-
-                    return FutureBuilder<String>(
-                      future: _getFullName(commentData['author']),
-                      builder: (context, snapshot) {
-                        final authorName = snapshot.data ?? 'Anonymous';
-
-                        return ListTile(
-                          title: Text(commentData['content']),
-                          subtitle: Text('Commented by $authorName $commentTime'),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: Icon(
-                                  commentLikes.contains(user?.uid)
-                                      ? Icons.thumb_up
-                                      : Icons.thumb_up_alt_outlined,
-                                  color: commentLikes.contains(user?.uid)
-                                      ? Colors.blue
-                                      : Colors.grey,
-                                ),
-                                onPressed: () =>
-                                    _toggleCommentLike(comment.id, commentLikes),
-                              ),
-                              Text('${commentLikes.length}'),
-                            ],
-                          ),
-                        );
-                      },
-                    );
-                  },
-                );
-              },
-            ),
-          ),
-        ],
+          if (result != null && result == 'Post Added') {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('New post added!')),
+            );
+          }
+        },
       ),
     );
   }
