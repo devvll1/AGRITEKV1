@@ -1,4 +1,4 @@
-# agritek
+# AgriTek
 
 A new Flutter project.
 
