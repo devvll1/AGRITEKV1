@@ -240,302 +240,302 @@ void dispose() {
       debugPrint('Error adding comment: $e');
     }
   }
-
-  @override
-  Widget build(BuildContext context) {
-    return DefaultTextStyle(
-      style: const TextStyle(
-        fontFamily: 'Poppins',
-        fontSize: 14,
-        color: Colors.black,
-      ),
-      child: CupertinoPageScaffold(
-        navigationBar: CupertinoNavigationBar(
-          middle: Text(
-            widget.title,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-            ),
+@override
+Widget build(BuildContext context) {
+  return DefaultTextStyle(
+    style: const TextStyle(
+      fontFamily: 'Poppins',
+      fontSize: 14,
+      color: Colors.black,
+    ),
+    child: CupertinoPageScaffold(
+      navigationBar: CupertinoNavigationBar(
+        middle: Text(
+          widget.title,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
           ),
         ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Post Details
-                        Row(
-                          children: [
-                            CircleAvatar(
-                              radius: 24,
-                              backgroundImage: _authorProfileImageUrl != null &&
-                                      _authorProfileImageUrl!.isNotEmpty
-                                  ? NetworkImage(_authorProfileImageUrl!)
-                                  : const AssetImage(
-                                          'assets/images/defaultprofile.png')
-                                      as ImageProvider,
-                            ),
-                            const SizedBox(width: 8),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  widget.author,
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+      ),
+      child: SafeArea(
+        child: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Post Details
+                      Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 24,
+                            backgroundImage: _authorProfileImageUrl != null &&
+                                    _authorProfileImageUrl!.isNotEmpty
+                                ? NetworkImage(_authorProfileImageUrl!)
+                                : const AssetImage('assets/images/defaultprofile.png')
+                                    as ImageProvider,
+                          ),
+                          const SizedBox(width: 8),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                widget.author,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
                                 ),
-                                Text(
-                                  widget.category,
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    color: CupertinoColors.inactiveGray,
-                                  ),
+                              ),
+                              Text(
+                                widget.category,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  color: CupertinoColors.inactiveGray,
                                 ),
-                              ],
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: GestureDetector(
-                                onTap: () {
-                                  if (_postImageUrl != null && _postImageUrl!.isNotEmpty) {
-                                    _showImagePopup(context, _postImageUrl!);
-                                  }
-                                },
-                                child: _postImageUrl != null && _postImageUrl!.isNotEmpty
-                                    ? Image.network(
-                                        _postImageUrl!,
-                                        height: 200,
-                                        width: double.infinity,
-                                        fit: BoxFit.cover,
-                                        loadingBuilder: (context, child, loadingProgress) {
-                                          if (loadingProgress == null) return child;
-                                          return Center(
-                                            child: CircularProgressIndicator(
-                                              value: loadingProgress.expectedTotalBytes != null
-                                                  ? loadingProgress.cumulativeBytesLoaded /
-                                                      (loadingProgress.expectedTotalBytes ?? 1)
-                                                  : null,
-                                            ),
-                                          );
-                                        },
-                                        errorBuilder: (context, error, stackTrace) => const Image(
-                                          image: AssetImage('assets/images/defaultimg.png'),
-                                          height: 200,
-                                          width: double.infinity,
-                                          fit: BoxFit.cover,
-                                        ),
-                                      )
-                                    : const Image(
-                                        image: AssetImage('assets/images/defaultimg.png'),
-                                        height: 200,
-                                        width: double.infinity,
-                                        fit: BoxFit.cover,
-                                      ),
                               ),
-                            ),
-
-                        const SizedBox(height: 8),
-                        Text(
-                          DateFormat.yMMMd().format(
-                            DateFormat('MMM d, yyyy h:mm a').parse(widget.time),
+                            ],
                           ),
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey,
-                          ),
-                        ),
-                        const Divider(),
-                        Text(
-                          widget.title,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          widget.content,
-                          style: const TextStyle(
-                            fontSize: 14,
-                          ),
-                        ),
-                        const Divider(),
-                        Row(
-                          children: [
-                            IconButton(
-                              icon: Icon(
-                                _hasLiked
-                                    ? CupertinoIcons.hand_thumbsup_fill
-                                    : CupertinoIcons.hand_thumbsup,
-                                color: _hasLiked
-                                    ? CupertinoColors.activeBlue
-                                    : CupertinoColors.inactiveGray,
-                              ),
-                              onPressed: _togglePostLike,
-                            ),
-                            Text('${_postLikes.length} Likes'),
-                          ],
-                        ),
-                        const Divider(),
-                        // Comments Section
-                        const Text(
-                          'Comments',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        StreamBuilder<QuerySnapshot>(
-                          stream: FirebaseFirestore.instance
-                              .collection('posts')
-                              .doc(widget.postId)
-                              .collection('comments')
-                              .orderBy('timestamp', descending: true)
-                              .snapshots(),
-                          builder: (context, snapshot) {
-                            if (!snapshot.hasData) {
-                              return const Center(
-                                child: CupertinoActivityIndicator(),
-                              );
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      // Post Image
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: GestureDetector(
+                          onTap: () {
+                            if (_postImageUrl != null && _postImageUrl!.isNotEmpty) {
+                              _showImagePopup(context, _postImageUrl!);
                             }
-
-                            final comments = snapshot.data!.docs;
-
-                            if (comments.isEmpty) {
-                              return const Center(
-                                child: Text('No comments yet'),
-                              );
-                            }
-
-                            return ListView.builder(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              itemCount: comments.length,
-                              itemBuilder: (context, index) {
-                                final commentData =
-                                    comments[index].data() as Map<String, dynamic>;
-                                final author = commentData['author'] ?? 'Anonymous';
-                                final text = commentData['text'] ?? '';
-                                final timestamp =
-                                    commentData['timestamp'] as Timestamp?;
-                                final time = timestamp != null
-                                    ? DateFormat('MMM d, yyyy h:mm a')
-                                        .format(timestamp.toDate())
-                                    : 'Just now';
-
-                                return Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 4.0),
-                                  child: Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      CircleAvatar(
-                                        radius: 16,
-                                        backgroundImage: NetworkImage(
-                                          commentData['profileImageUrl'] ?? 
-                                              'assets/images/defaultprofile.png',
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Container(
-                                          padding: const EdgeInsets.all(8.0),
-                                          decoration: BoxDecoration(
-                                            color: CupertinoColors.systemGrey5,
-                                            borderRadius: BorderRadius.circular(8),
-                                          ),
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                author,
-                                                style: const TextStyle(
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 14,
-                                                ),
-                                              ),
-                                              const SizedBox(height: 4),
-                                              Text(text),
-                                              const SizedBox(height: 4),
-                                              Text(
-                                                time,
-                                                style: const TextStyle(
-                                                  fontSize: 12,
-                                                  color: Colors.grey,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              },
-                            );
                           },
+                          child: _postImageUrl != null && _postImageUrl!.isNotEmpty
+                              ? Image.network(
+                                  _postImageUrl!,
+                                  height: 200,
+                                  width: double.infinity,
+                                  fit: BoxFit.cover,
+                                  loadingBuilder: (context, child, loadingProgress) {
+                                    if (loadingProgress == null) return child;
+                                    return Center(
+                                      child: CircularProgressIndicator(
+                                        value: loadingProgress.expectedTotalBytes != null
+                                            ? loadingProgress.cumulativeBytesLoaded /
+                                                (loadingProgress.expectedTotalBytes ?? 1)
+                                            : null,
+                                      ),
+                                    );
+                                  },
+                                  errorBuilder: (context, error, stackTrace) => const Image(
+                                    image: AssetImage('assets/images/defaultimg.png'),
+                                    height: 200,
+                                    width: double.infinity,
+                                    fit: BoxFit.cover,
+                                  ),
+                                )
+                              : const Image(
+                                  image: AssetImage('assets/images/defaultimg.png'),
+                                  height: 200,
+                                  width: double.infinity,
+                                  fit: BoxFit.cover,
+                                ),
                         ),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(height: 8),
+                      // Post Date
+                      Text(
+                        DateFormat.yMMMd().format(
+                          DateFormat('MMM d, yyyy h:mm a').parse(widget.time),
+                        ),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey,
+                        ),
+                      ),
+                      const Divider(),
+                      // Post Title
+                      Text(
+                        widget.title,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      // Post Content
+                      Text(
+                        widget.content,
+                        style: const TextStyle(
+                          fontSize: 14,
+                        ),
+                      ),
+                      const Divider(),
+                      // Likes Section
+                      Row(
+                        children: [
+                          IconButton(
+                            icon: Icon(
+                              _hasLiked
+                                  ? CupertinoIcons.hand_thumbsup_fill
+                                  : CupertinoIcons.hand_thumbsup,
+                              color: _hasLiked
+                                  ? CupertinoColors.activeBlue
+                                  : CupertinoColors.inactiveGray,
+                            ),
+                            onPressed: _togglePostLike,
+                          ),
+                          Text('${_postLikes.length} Likes'),
+                        ],
+                      ),
+                      const Divider(),
+                      // Comments Section
+                      const Text(
+                        'Comments',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      StreamBuilder<QuerySnapshot>(
+                        stream: FirebaseFirestore.instance
+                            .collection('posts')
+                            .doc(widget.postId)
+                            .collection('comments')
+                            .orderBy('timestamp', descending: true)
+                            .snapshots(),
+                        builder: (context, snapshot) {
+                          if (!snapshot.hasData) {
+                            return const Center(
+                              child: CupertinoActivityIndicator(),
+                            );
+                          }
+
+                          final comments = snapshot.data!.docs;
+
+                          if (comments.isEmpty) {
+                            return const Center(
+                              child: Text('No comments yet'),
+                            );
+                          }
+
+                          return ListView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: comments.length,
+                            itemBuilder: (context, index) {
+                              final commentData =
+                                  comments[index].data() as Map<String, dynamic>;
+                              final author = commentData['author'] ?? 'Anonymous';
+                              final text = commentData['text'] ?? '';
+                              final timestamp = commentData['timestamp'] as Timestamp?;
+                              final time = timestamp != null
+                                  ? DateFormat('MMM d, yyyy h:mm a')
+                                      .format(timestamp.toDate())
+                                  : 'Just now';
+
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 4.0),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    CircleAvatar(
+                                      radius: 16,
+                                      backgroundImage: NetworkImage(
+                                        commentData['profileImageUrl'] ??
+                                            'assets/images/defaultprofile.png',
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Container(
+                                        padding: const EdgeInsets.all(8.0),
+                                        decoration: BoxDecoration(
+                                          color: CupertinoColors.systemGrey5,
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              author,
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(text),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              time,
+                                              style: const TextStyle(
+                                                fontSize: 12,
+                                                color: Colors.grey,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      ),
+                    ],
                   ),
                 ),
               ),
-              // Add Comment
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: CupertinoTextField(
-                        controller: _commentController,
-                        placeholder: FirebaseAuth.instance.currentUser == null
-                            ? 'Log in to add a comment'
-                            : 'Add a comment...',
-                        padding: const EdgeInsets.all(12),
-                        enabled: FirebaseAuth.instance.currentUser != null,
-                      ),
+            ),
+            // Add Comment Section
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: CupertinoTextField(
+                      controller: _commentController,
+                      placeholder: FirebaseAuth.instance.currentUser == null
+                          ? 'Log in to add a comment'
+                          : 'Add a comment...',
+                      padding: const EdgeInsets.all(12),
+                      enabled: FirebaseAuth.instance.currentUser != null,
                     ),
-                    const SizedBox(width: 8),
-                    CupertinoButton(
-                      padding: const EdgeInsets.all(0),
-                      color: CupertinoColors.activeBlue,
-                      onPressed: FirebaseAuth.instance.currentUser == null
-                          ? () {
-                              // Show login prompt
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Please log in to comment'),
-                                ),
-                              );
+                  ),
+                  const SizedBox(width: 8),
+                  CupertinoButton(
+                    padding: const EdgeInsets.all(0),
+                    color: CupertinoColors.activeBlue,
+                    onPressed: FirebaseAuth.instance.currentUser == null
+                        ? () {
+                            // Show login prompt
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Please log in to comment'),
+                              ),
+                            );
+                          }
+                        : () async {
+                            if (_commentController.text.isNotEmpty) {
+                              await _addComment(_commentController.text);
                             }
-                          : () async {
-                              if (_commentController.text.isNotEmpty) {
-                                await _addComment(_commentController.text);
-                              }
-                            },
-                      child: const Icon(
-                        CupertinoIcons.paperplane_fill,
-                        color: CupertinoColors.white,
-                      ),
+                          },
+                    child: const Icon(
+                      CupertinoIcons.paperplane_fill,
+                      color: CupertinoColors.white,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
-    );
+    ),
+  );
   }
 }
