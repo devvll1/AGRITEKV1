@@ -13,6 +13,7 @@ class StartupPage extends StatefulWidget {
 class _StartupPageState extends State<StartupPage> with TickerProviderStateMixin {
   String? errorMessage = '';
   bool isLogin = true;
+  bool _isObscured = true;
 
   final TextEditingController _controllerEmail = TextEditingController();
   final TextEditingController _controllerPassword = TextEditingController();
@@ -200,7 +201,7 @@ class _StartupPageState extends State<StartupPage> with TickerProviderStateMixin
                   const SizedBox(height: 20),
                   TextField(
                     controller: _controllerPassword,
-                    obscureText: true,
+                    obscureText: _isObscured, // Use _isObscured to toggle visibility
                     decoration: InputDecoration(
                       labelText: "Password",
                       labelStyle: const TextStyle(color: Colors.white),
@@ -211,6 +212,17 @@ class _StartupPageState extends State<StartupPage> with TickerProviderStateMixin
                         borderSide: BorderSide.none,
                       ),
                       prefixIcon: const Icon(Icons.lock, color: Colors.white),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _isObscured ? Icons.visibility : Icons.visibility_off,
+                          color: Colors.white,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _isObscured = !_isObscured; // Toggle the visibility state
+                          });
+                        },
+                      ),
                     ),
                     style: const TextStyle(color: Colors.white),
                     cursorColor: Colors.white,
