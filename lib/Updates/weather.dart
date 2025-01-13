@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'package:intl/intl.dart'; // Import for date formatting
 
 
+
 class WeatherScreen extends StatefulWidget {
   const WeatherScreen({super.key});
 
@@ -33,7 +34,7 @@ class WeatherScreenState extends State<WeatherScreen> {
     _updateTime(); // Fetch the time when the widget is initialized
   }
 
-  Future<void> _getCurrentLocation() async {
+   Future<void> _getCurrentLocation() async {
     Position position = await _determinePosition();
     lat = position.latitude;
     lon = position.longitude;
@@ -42,31 +43,36 @@ class WeatherScreenState extends State<WeatherScreen> {
   }
 
   Future<Position> _determinePosition() async {
-    bool serviceEnabled;
-    LocationPermission permission;
+  bool serviceEnabled;
+  LocationPermission permission;
 
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      return Future.error('Location services are disabled.');
-    }
-
-    permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        return Future.error('Location permissions are denied');
-      }
-    }
-
-    if (permission == LocationPermission.deniedForever) {
-      return Future.error(
-          'Location permissions are permanently denied, we cannot request permissions.');
-    }
-
-    return await Geolocator.getCurrentPosition();
+  // Check if location services are enabled
+  serviceEnabled = await Geolocator.isLocationServiceEnabled();
+  if (!serviceEnabled) {
+    return Future.error('Location services are disabled.');
   }
 
-  Future<void> _fetchWeather(double lat, double lon) async {
+  // Check location permissions
+  permission = await Geolocator.checkPermission();
+  if (permission == LocationPermission.denied) {
+    permission = await Geolocator.requestPermission();
+    if (permission == LocationPermission.denied) {
+      return Future.error('Location permissions are denied');
+    }
+  }
+
+  if (permission == LocationPermission.deniedForever) {
+    return Future.error(
+        'Location permissions are permanently denied, we cannot request permissions.');
+  }
+
+  // Get the current position with high accuracy
+  return await Geolocator.getCurrentPosition(
+    desiredAccuracy: LocationAccuracy.high,
+  );
+}
+
+    Future<void> _fetchWeather(double lat, double lon) async {
     final url =
         'https://api.open-meteo.com/v1/forecast?latitude=$lat&longitude=$lon&current_weather=true&hourly=temperature_2m,relativehumidity_2m,windspeed_10m,windgusts_10m,precipitation_probability';
 
@@ -77,31 +83,47 @@ class WeatherScreenState extends State<WeatherScreen> {
 
       if (mounted) {
         setState(() {
-          weather = data['current_weather']['weathercode'] == 0
-              ? 'Clear'
-              : data['current_weather']['weathercode'] == 1
-                  ? 'Mainly Clear'
-                  : data['current_weather']['weathercode'] == 2
-                      ? 'Partly Cloudy'
-                      : data['current_weather']['weathercode'] == 3
-                          ? 'Overcast'
-                          : data['current_weather']['weathercode'] == 45 || data['current_weather']['weathercode'] == 48
-                              ? 'Foggy'
-                              : data['current_weather']['weathercode'] == 51 || data['current_weather']['weathercode'] == 53 || data['current_weather']['weathercode'] == 55
-                                  ? 'Drizzle'
-                                  : data['current_weather']['weathercode'] == 61 || data['current_weather']['weathercode'] == 63 || data['current_weather']['weathercode'] == 65
-                                      ? 'Rain'
-                                      : data['current_weather']['weathercode'] == 71 || data['current_weather']['weathercode'] == 73 || data['current_weather']['weathercode'] == 75
-                                          ? 'Snow'
-                                          : data['current_weather']['weathercode'] == 95 || data['current_weather']['weathercode'] == 96 || data['current_weather']['weathercode'] == 99
-                                              ? 'Thunderstorm'
-                                              : 'Unknown';
+          // Updated weather mapping
+          weather = {
+            0: 'Clear',
+            1: 'Mainly Clear',
+            2: 'Partly Cloudy',
+            3: 'Overcast',
+            45: 'Foggy',
+            48: 'Depositing Rime Fog',
+            51: 'Light Drizzle',
+            53: 'Moderate Drizzle',
+            55: 'Dense Drizzle',
+            56: 'Freezing Light Drizzle',
+            57: 'Freezing Dense Drizzle',
+            61: 'Slight Rain',
+            63: 'Moderate Rain',
+            65: 'Heavy Rain',
+            66: 'Freezing Light Rain',
+            67: 'Freezing Heavy Rain',
+            71: 'Slight Snow',
+            73: 'Moderate Snow',
+            75: 'Heavy Snow',
+            77: 'Snow Grains',
+            80: 'Slight Rain Showers',
+            81: 'Moderate Rain Showers',
+            82: 'Violent Rain Showers',
+            85: 'Slight Snow Showers',
+            86: 'Heavy Snow Showers',
+            95: 'Thunderstorm',
+            96: 'Thunderstorm with Slight Hail',
+            99: 'Thunderstorm with Heavy Hail',
+          }[data['current_weather']['weathercode']] ?? 'Unknown';
+
+          // Update other weather data
           temperature = data['current_weather']['temperature'];
           humidity = data['hourly']['relativehumidity_2m']?[0] ?? 0;
           windSpeed = data['current_weather']['windspeed'];
           windGust = data['hourly']['windgusts_10m']?[0] ?? 0;
-          precipChance = data['hourly']['precipitation_probability']?[0] ?? 0;
-          _updateTime(); // Update the time whenever we fetch the weather data
+          precipChance = (data['hourly']['precipitation_probability']?[0] ?? 0).toDouble();
+
+          // Update time
+          _updateTime();
         });
       }
     } else {
@@ -113,7 +135,8 @@ class WeatherScreenState extends State<WeatherScreen> {
     }
   }
 
-  Future<void> _fetchLocationName(double lat, double lon) async {
+
+   Future<void> _fetchLocationName(double lat, double lon) async {
     final url =
         'https://api.opencagedata.com/geocode/v1/json?q=$lat+$lon&key=269b80706cd84223a9ac0155bb6b285c'; // Replace with your actual API key
 
@@ -158,6 +181,7 @@ class WeatherScreenState extends State<WeatherScreen> {
       }
     }
   }
+
 
   // Function to update the current time
   void _updateTime() {

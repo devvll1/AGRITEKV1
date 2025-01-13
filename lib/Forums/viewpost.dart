@@ -499,19 +499,31 @@ void dispose() {
                     Expanded(
                       child: CupertinoTextField(
                         controller: _commentController,
-                        placeholder: 'Add a comment...',
+                        placeholder: FirebaseAuth.instance.currentUser == null
+                            ? 'Log in to add a comment'
+                            : 'Add a comment...',
                         padding: const EdgeInsets.all(12),
+                        enabled: FirebaseAuth.instance.currentUser != null,
                       ),
                     ),
                     const SizedBox(width: 8),
                     CupertinoButton(
                       padding: const EdgeInsets.all(0),
                       color: CupertinoColors.activeBlue,
-                      onPressed: () async {
-                        if (_commentController.text.isNotEmpty) {
-                          await _addComment(_commentController.text);
-                        }
-                      },
+                      onPressed: FirebaseAuth.instance.currentUser == null
+                          ? () {
+                              // Show login prompt
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Please log in to comment'),
+                                ),
+                              );
+                            }
+                          : () async {
+                              if (_commentController.text.isNotEmpty) {
+                                await _addComment(_commentController.text);
+                              }
+                            },
                       child: const Icon(
                         CupertinoIcons.paperplane_fill,
                         color: CupertinoColors.white,

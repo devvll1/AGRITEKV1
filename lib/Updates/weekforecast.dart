@@ -66,7 +66,7 @@ class _SevenDaysForecastScreenState extends State<SevenDaysForecastScreen> {
 
   Future<void> _fetchSevenDayForecast(double lat, double lon) async {
     final url =
-        'https://api.open-meteo.com/v1/forecast?latitude=$lat&longitude=$lon&daily=temperature_2m_max,temperature_2m_min,windspeed_10m_max,windgusts_10m_max,precipitation_probability_max,weathercode&timezone=auto';
+        'https://api.open-meteo.com/v1/forecast?latitude=$lat&longitude=$lon&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,weathercode&timezone=auto';
 
     try {
       final response = await http.get(Uri.parse(url));
@@ -80,8 +80,6 @@ class _SevenDaysForecastScreenState extends State<SevenDaysForecastScreen> {
               final date = DateTime.parse(data['daily']['time'][index]);
               final maxTemp = data['daily']['temperature_2m_max'][index];
               final minTemp = data['daily']['temperature_2m_min'][index];
-              final windSpeed = data['daily']['windspeed_10m_max'][index];
-              final windGust = data['daily']['windgusts_10m_max'][index];
               final precipitationChance =
                   data['daily']['precipitation_probability_max'][index];
 
@@ -89,8 +87,6 @@ class _SevenDaysForecastScreenState extends State<SevenDaysForecastScreen> {
                 'date': DateFormat('EEEE, MMM d').format(date),
                 'maxTemp': maxTemp,
                 'minTemp': minTemp,
-                'windSpeed': windSpeed,
-                'windGust': windGust,
                 'precipitationChance': precipitationChance,
                 'description':
                     _getWeatherDescription(data['daily']['weathercode'][index]),
@@ -111,36 +107,66 @@ class _SevenDaysForecastScreenState extends State<SevenDaysForecastScreen> {
   }
 
   String _getWeatherDescription(int code) {
-    switch (code) {
-      case 0:
-        return 'Clear skies';
-      case 1:
-        return 'Mainly clear';
-      case 2:
-        return 'Partly cloudy';
-      case 3:
-        return 'Overcast';
-      case 45:
-      case 48:
-        return 'Foggy';
-      case 51:
-      case 53:
-      case 55:
-        return 'Drizzle';
-      case 61:
-      case 63:
-      case 65:
-        return 'Rain';
-      case 71:
-      case 73:
-      case 75:
-        return 'Snowfall';
-      case 95:
-        return 'Thunderstorm';
-      default:
-        return 'Unknown';
-    }
+  switch (code) {
+    case 0:
+      return 'Clear skies';
+    case 1:
+      return 'Mainly clear';
+    case 2:
+      return 'Partly cloudy';
+    case 3:
+      return 'Overcast';
+    case 45:
+    case 48:
+      return 'Foggy';
+    case 51:
+      return 'Light drizzle';
+    case 53:
+      return 'Moderate drizzle';
+    case 55:
+      return 'Dense drizzle';
+    case 56:
+      return 'Freezing light drizzle';
+    case 57:
+      return 'Freezing dense drizzle';
+    case 61:
+      return 'Slight rain';
+    case 63:
+      return 'Moderate rain';
+    case 65:
+      return 'Heavy rain';
+    case 66:
+      return 'Freezing light rain';
+    case 67:
+      return 'Freezing heavy rain';
+    case 71:
+      return 'Slight snowfall';
+    case 73:
+      return 'Moderate snowfall';
+    case 75:
+      return 'Heavy snowfall';
+    case 77:
+      return 'Snow grains';
+    case 80:
+      return 'Slight rain showers';
+    case 81:
+      return 'Moderate rain showers';
+    case 82:
+      return 'Violent rain showers';
+    case 85:
+      return 'Slight snow showers';
+    case 86:
+      return 'Heavy snow showers';
+    case 95:
+      return 'Thunderstorm';
+    case 96:
+      return 'Thunderstorm with slight hail';
+    case 99:
+      return 'Thunderstorm with heavy hail';
+    default:
+      return 'Unknown';
   }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -195,15 +221,6 @@ class _SevenDaysForecastScreenState extends State<SevenDaysForecastScreen> {
                                     Text('Min Temp: ${day['minTemp']}°C'),
                                   ],
                                 ),
-                                Row(
-                                  children: [
-                                    const Icon(CupertinoIcons.cloud_rain,
-                                        size: 20),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                        'Precipitation: ${day['precipitationChance']}%'),
-                                  ],
-                                ),
                               ],
                             ),
                             Column(
@@ -211,16 +228,11 @@ class _SevenDaysForecastScreenState extends State<SevenDaysForecastScreen> {
                               children: [
                                 Row(
                                   children: [
-                                    const Icon(CupertinoIcons.wind, size: 20),
+                                    const Icon(CupertinoIcons.cloud_rain,
+                                        size: 20),
                                     const SizedBox(width: 8),
-                                    Text('Wind: ${day['windSpeed']} km/h'),
-                                  ],
-                                ),
-                                Row(
-                                  children: [
-                                    const Icon(CupertinoIcons.wind, size: 20),
-                                    const SizedBox(width: 8),
-                                    Text('Gust: ${day['windGust']} km/h'),
+                                    Text(
+                                        'Precipitation: ${day['precipitationChance']}%'),
                                   ],
                                 ),
                                 Row(

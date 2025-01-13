@@ -59,9 +59,14 @@ class _ForumsPageState extends State<ForumsPage> {
   }
 
   Future<void> _togglePostLike(String postId, List<dynamic> currentLikes) async {
-    final userId = user?.uid;
-    if (userId == null) return;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('You must be logged in to like posts.')),
+      );
+      return;
+    }
 
+    final userId = user?.uid;
     final postDoc = FirebaseFirestore.instance.collection('posts').doc(postId);
 
     if (currentLikes.contains(userId)) {
@@ -126,7 +131,7 @@ class _ForumsPageState extends State<ForumsPage> {
                                 time: postTime,
                                 likes: postLikes,
                                 imageUrl: '',
-                                comments: [], 
+                                comments: [],
                                 userId: user?.uid ?? '',
                               ),
                             ),
@@ -148,7 +153,8 @@ class _ForumsPageState extends State<ForumsPage> {
                                     decoration: BoxDecoration(
                                       borderRadius: BorderRadius.circular(8),
                                       image: DecorationImage(
-                                        image: NetworkImage(postData['imageUrl'] ?? ''),
+                                        image: NetworkImage(
+                                            postData['imageUrl'] ?? ''),
                                         fit: BoxFit.cover,
                                       ),
                                     ),
@@ -161,54 +167,67 @@ class _ForumsPageState extends State<ForumsPage> {
                                       backgroundImage: authorImageUrl.isNotEmpty
                                           ? NetworkImage(authorImageUrl)
                                           : const AssetImage(
-                                              'assets/images/defaultprofile.png')
+                                                  'assets/images/defaultprofile.png')
                                               as ImageProvider,
                                     ),
                                     SizedBox(width: 8),
-                                    Text('$authorName',
-                                        style: const TextStyle(
-                                            fontWeight: FontWeight.bold, fontSize: 14)),
+                                    Text(
+                                      '$authorName',
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14),
+                                    ),
                                   ],
                                 ),
-                                Text('Posted on: $postTime',
-                                    style: const TextStyle(
-                                        color: Colors.grey, fontSize: 12)),
+                                Text(
+                                  'Posted on: $postTime',
+                                  style: const TextStyle(
+                                      color: Colors.grey, fontSize: 12),
+                                ),
                                 if (postData['category'] != null)
-                                  Text('Category: ${postData['category']}',
-                                      style: const TextStyle(
-                                          fontStyle: FontStyle.italic,
-                                          fontSize: 12,
-                                          color: Colors.grey)),
-                                Divider(color: Colors.grey.shade400, thickness: 1),
-                                Text(postData['title'] ?? 'No Title',
+                                  Text(
+                                    'Category: ${postData['category']}',
                                     style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.black)),
+                                        fontStyle: FontStyle.italic,
+                                        fontSize: 12,
+                                        color: Colors.grey),
+                                  ),
+                                Divider(color: Colors.grey.shade400, thickness: 1),
+                                Text(
+                                  postData['title'] ?? 'No Title',
+                                  style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black),
+                                ),
                                 SizedBox(height: 4),
                                 Text(
-                                  postData['content'] ?? 'No Content Available',
+                                  postData['content'] ??
+                                      'No Content Available',
                                   style: const TextStyle(fontSize: 14),
                                   maxLines: 12,
                                   overflow: TextOverflow.ellipsis,
                                 ),
                                 Divider(color: Colors.grey.shade400, thickness: 1),
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     Row(
                                       children: [
                                         IconButton(
                                           icon: Icon(
                                             postLikes.contains(user?.uid)
-                                                ? CupertinoIcons.hand_thumbsup_fill
+                                                ? CupertinoIcons
+                                                    .hand_thumbsup_fill
                                                 : CupertinoIcons.hand_thumbsup,
                                             color: postLikes.contains(user?.uid)
                                                 ? CupertinoColors.activeBlue
                                                 : CupertinoColors.inactiveGray,
                                           ),
                                           onPressed: () =>
-                                              _togglePostLike(post.id, postLikes),
+                                              _togglePostLike(
+                                                  post.id, postLikes),
                                         ),
                                         Text('${postLikes.length} Likes'),
                                       ],
@@ -227,12 +246,14 @@ class _ForumsPageState extends State<ForumsPage> {
                                               .collection('comments')
                                               .snapshots(),
                                           builder: (context, commentSnapshot) {
-                                            final commentCount =
-                                                commentSnapshot.data?.docs.length ?? 0;
+                                            final commentCount = commentSnapshot
+                                                    .data?.docs.length ??
+                                                0;
 
                                             return Text(
                                               '$commentCount Comments',
-                                              style: const TextStyle(fontSize: 13),
+                                              style: const TextStyle(
+                                                  fontSize: 13),
                                             );
                                           },
                                         ),
@@ -253,33 +274,37 @@ class _ForumsPageState extends State<ForumsPage> {
           );
         },
       ),
-      floatingActionButton: CupertinoButton(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        color: CupertinoColors.activeBlue,
-        borderRadius: BorderRadius.circular(30),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: const [
-            Icon(CupertinoIcons.add, color: CupertinoColors.white),
-            SizedBox(width: 5),
-            Text('New Post', style: TextStyle(color: CupertinoColors.white)),
-          ],
-        ),
-        onPressed: () async {
-          final result = await Navigator.push(
-            context,
-            CupertinoPageRoute(
-              builder: (context) => const NewPostPage(),
-            ),
-          );
+      floatingActionButton: user == null
+          ? null
+          : CupertinoButton(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              color: CupertinoColors.activeBlue,
+              borderRadius: BorderRadius.circular(30),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: const [
+                  Icon(CupertinoIcons.add, color: CupertinoColors.white),
+                  SizedBox(width: 5),
+                  Text('New Post',
+                      style: TextStyle(color: CupertinoColors.white)),
+                ],
+              ),
+              onPressed: () async {
+                final result = await Navigator.push(
+                  context,
+                  CupertinoPageRoute(
+                    builder: (context) => const NewPostPage(),
+                  ),
+                );
 
-          if (result != null && result == 'Post Added') {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('New post added!')),
-            );
-          }
-        },
-      ),
+                if (result != null && result == 'Post Added') {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('New post added!')),
+                  );
+                }
+              },
+            ),
     );
   }
 }
