@@ -1,10 +1,9 @@
-// ignore_for_file: library_private_types_in_public_api
-
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:intl/intl.dart';
+import 'package:timeline_tile/timeline_tile.dart';
 
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key});
@@ -27,7 +26,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
     _selectedEvents = ValueNotifier([]);
     _loadNotes();
 
-    // Check for today's reminders after the first frame renders
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkForTodayReminder();
     });
@@ -43,7 +41,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Plant Calendar with Notes'),
+        title: const Text('Plant Calendar with Timeline'),
       ),
       body: Column(
         children: [
@@ -64,15 +62,19 @@ class _CalendarScreenState extends State<CalendarScreen> {
                     _selectedDay.day,
                   )] ??
                   [];
-
-              // Show notes if there are any for the selected day
-              if (_selectedEvents.value.isNotEmpty) {
-                _showNotesDialog(_selectedDay, _selectedEvents.value);
-              }
             },
             onPageChanged: (focusedDay) {
               _focusedDay = focusedDay;
             },
+             headerStyle: const HeaderStyle(
+                formatButtonVisible: false, // Hides the "2 weeks" button
+                titleCentered: true, // Centers the month/year text
+                headerPadding: const EdgeInsets.symmetric(vertical: 8.0), // Reduces header padding
+                ),
+                calendarStyle: const CalendarStyle(
+                  cellMargin: EdgeInsets.all(2.0), // Adjust cell spacing
+                ),
+              rowHeight: 45.0, // Reduces the height of each row
           ),
           const SizedBox(height: 8.0),
           Expanded(
@@ -90,6 +92,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
               },
             ),
           ),
+          const Divider(),
+          Expanded(
+            child: _buildTimeline(),
+          ),
         ],
       ),
       floatingActionButton: FloatingActionButton(
@@ -98,6 +104,66 @@ class _CalendarScreenState extends State<CalendarScreen> {
       ),
     );
   }
+
+Widget _buildTimeline() {
+  final List<MapEntry<DateTime, List<String>>> sortedEvents = _events.entries.toList()
+    ..sort((a, b) => a.key.compareTo(b.key));
+
+  return ListView.builder(
+    itemCount: sortedEvents.length,
+    itemBuilder: (context, index) {
+      final date = sortedEvents[index].key;
+      final events = sortedEvents[index].value;
+
+      return TimelineTile(
+        alignment: TimelineAlign.start,
+        indicatorStyle: IndicatorStyle(
+          width: 20,
+          color: Colors.green,
+          indicator: Container(
+            decoration: BoxDecoration(
+              color: Colors.green,
+              shape: BoxShape.circle,
+            ),
+          ),
+        ),
+        afterLineStyle: LineStyle(
+          color: index == sortedEvents.length - 1 ? Colors.transparent : Colors.grey,
+          thickness: 2,
+        ),
+        beforeLineStyle: LineStyle(
+          color: index == 0 ? Colors.transparent : Colors.grey,
+          thickness: 2,
+        ),
+        endChild: Card(
+          margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 8.0),
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  DateFormat.yMMMMd().format(date),
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 4.0),
+                ...events.map(
+                  (event) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2.0),
+                    child: Text('- $event',
+                    style: const TextStyle(fontSize: 12.0,)
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    },
+  );
+}
+
 
   void _showPlantSelectionDialog() {
     showDialog(
@@ -126,7 +192,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
   void _addPlantEvents(String plant) {
     final plantingDate = DateTime(_selectedDay.year, _selectedDay.month, _selectedDay.day);
 
-    // Predefined plant events
     final Map<String, List<Map<String, dynamic>>> plantEvents = {
       'Eggplant': [
         {'event': 'Water the eggplant', 'daysAfterPlanting': 1},
@@ -155,7 +220,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
         _events[normalizedDate]!.add(task['event']);
       }
 
-      // Update selected events and save notes
       _selectedEvents.value = _events[plantingDate] ?? [];
       _saveNotes();
       setState(() {});
@@ -189,6 +253,14 @@ class _CalendarScreenState extends State<CalendarScreen> {
     }
   }
 
+  void _checkForTodayReminder() {
+    final today = DateTime.now();
+    final normalizedToday = DateTime(today.year, today.month, today.day);
+    if (_events[normalizedToday]?.isNotEmpty ?? false) {
+      _showNotesDialog(normalizedToday, _events[normalizedToday]!);
+    }
+  }
+
   void _showNotesDialog(DateTime date, List<String> notes) {
     showDialog(
       context: context,
@@ -210,13 +282,5 @@ class _CalendarScreenState extends State<CalendarScreen> {
         );
       },
     );
-  }
-
-  void _checkForTodayReminder() {
-    final today = DateTime.now();
-    final normalizedToday = DateTime(today.year, today.month, today.day);
-    if (_events[normalizedToday]?.isNotEmpty ?? false) {
-      _showNotesDialog(normalizedToday, _events[normalizedToday]!);
-    }
   }
 }

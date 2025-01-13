@@ -25,6 +25,43 @@ class _HomePageState extends State<HomePage> {
     _fetchUserData();
   }
 
+  void _showMoreOptions(BuildContext context) {
+  showCupertinoModalPopup(
+    context: context,
+    builder: (BuildContext context) {
+      return CupertinoActionSheet(
+        title: const Text("More Options", style: TextStyle(fontFamily: 'Poppins')),
+        actions: [
+          CupertinoActionSheetAction(
+            onPressed: () {
+              Navigator.pop(context);
+              _showSignOutConfirmation(context); // Show sign-out confirmation
+            },
+            child: const Text("Sign Out", style: TextStyle(fontFamily: 'Poppins')),
+          ),
+          CupertinoActionSheetAction(
+            onPressed: () {
+              Navigator.pop(context);
+              // Add any other option you need
+              print("Option 2 selected");
+            },
+            child: const Text("Option 2", style: TextStyle(fontFamily: 'Poppins')),
+          ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          isDefaultAction: true,
+          onPressed: () {
+            Navigator.pop(context); // Close the action sheet
+          },
+          child: const Text("Cancel", style: TextStyle(fontFamily: 'Poppins')),
+        ),
+      );
+    },
+  );
+}
+
+
+
   Future<void> _fetchUserData() async {
     try {
       final User? user = FirebaseAuth.instance.currentUser;
@@ -65,11 +102,16 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return CupertinoPageScaffold(
+    return WillPopScope(
+      onWillPop: () async {
+        bool shouldExit = await _showExitConfirmation(context);
+        return shouldExit;
+      },
+      child: CupertinoPageScaffold(
       navigationBar: CupertinoNavigationBar(
         middle: isLoading
             ? const Text("Welcome!", style: TextStyle(fontFamily: 'Poppins'))
-            : Text("Welcome ${firstName ?? ''}!", style: TextStyle(fontFamily: 'Poppins')),
+            : Text("Welcome ${firstName ?? ''}!", style: const TextStyle(fontFamily: 'Poppins')),
         leading: CupertinoButton(
           padding: EdgeInsets.zero,
           onPressed: () {
@@ -80,12 +122,35 @@ class _HomePageState extends State<HomePage> {
           },
           child: const Icon(CupertinoIcons.profile_circled, color: CupertinoColors.systemGreen),
         ),
-        trailing: CupertinoButton(
-          padding: EdgeInsets.zero,
-          onPressed: () {
-            _showSignOutConfirmation(context);
-          },
-          child: const Icon(CupertinoIcons.arrow_right_square, color: CupertinoColors.systemGreen),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Material(
+              color: Colors.transparent, // Transparent material for just the button
+              child: PopupMenuButton<String>(
+                onSelected: (String value) {
+                  if (value == 'signOut') {
+                    _showSignOutConfirmation(context); // Show sign-out confirmation
+                  } else {
+                    print("Option 2 selected");
+                  }
+                },
+                itemBuilder: (BuildContext context) {
+                  return [
+                    const PopupMenuItem<String>(
+                      value: 'signOut',
+                      child: Text("Sign Out", style: TextStyle(fontFamily: 'Poppins')),
+                    ),
+                    const PopupMenuItem<String>(
+                      value: 'option',
+                      child: Text("Option", style: TextStyle(fontFamily: 'Poppins')),
+                    ),
+                  ];
+                },
+                child: const Icon(CupertinoIcons.ellipsis, color: CupertinoColors.systemGreen),
+              ),
+            ),
+          ],
         ),
       ),
       child: SafeArea(
@@ -163,6 +228,7 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
       ),
+    ),
     );
   }
 
@@ -227,4 +293,35 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
+}
+
+Future<bool> _showExitConfirmation(BuildContext context) async {
+  bool shouldExit = false;
+  await showCupertinoDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return CupertinoAlertDialog(
+        title: const Text("Exit App", style: TextStyle(fontFamily: 'Poppins')),
+        content: const Text("Are you sure you want to exit the app?", style: TextStyle(fontFamily: 'Poppins')),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: () {
+              Navigator.of(context).pop(); // Close the dialog
+              shouldExit = false; // Do not exit the app
+            },
+            child: const Text("Cancel", style: TextStyle(fontFamily: 'Poppins')),
+          ),
+          CupertinoDialogAction(
+            isDestructiveAction: true, // Highlights the destructive action
+            onPressed: () {
+              Navigator.of(context).pop(); // Close the dialog
+              shouldExit = true; // Allow exiting the app
+            },
+            child: const Text("Exit", style: TextStyle(fontFamily: 'Poppins')),
+          ),
+        ],
+      );
+    },
+  );
+  return shouldExit;
 }
