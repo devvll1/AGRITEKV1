@@ -42,6 +42,22 @@ class _ForumsPageState extends State<ForumsPage> {
     return 'Anonymous';
   }
 
+  Future<String> _getProfileImageUrl(String? userId) async {
+    if (userId == null) return '';
+
+    try {
+      final userDoc =
+          await FirebaseFirestore.instance.collection('users').doc(userId).get();
+      if (userDoc.exists) {
+        final data = userDoc.data();
+        final profileImageUrl = data?['profileImageUrl'] ?? '';
+        return profileImageUrl;
+      }
+    } catch (e) {}
+
+    return '';
+  }
+
   Future<void> _togglePostLike(String postId, List<dynamic> currentLikes) async {
     final userId = user?.uid;
     if (userId == null) return;
@@ -91,125 +107,145 @@ class _ForumsPageState extends State<ForumsPage> {
                 builder: (context, snapshot) {
                   final authorName = snapshot.data ?? 'Anonymous';
 
-                  return GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        CupertinoPageRoute(
-                          builder: (context) => ViewPostPage(
-                            postId: post.id,
-                            title: postData['title'] ?? '',
-                            content: postData['content'] ?? '',
-                            category: postData['category'] ?? '',
-                            author: authorName,
-                            time: postTime,
-                            likes: postLikes,
-                            imageUrl: '', 
-                            comments: [],
-                          ),
-                        ),
-                      );
-                    },
-                    child: Card(
-                      margin: const EdgeInsets.symmetric(
-                          horizontal: 20.0, vertical: 10.0),
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            if (postData['imageUrl'] != null &&
-                                postData['imageUrl'].isNotEmpty)
-                              Container(
-                                width: double.infinity,
-                                height: 200,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(8),
-                                  image: DecorationImage(
-                                    image: NetworkImage(postData['imageUrl'] ?? ''),
-                                    fit: BoxFit.cover,
-                                  ),
-                                ),
+                  return FutureBuilder<String>(
+                    future: _getProfileImageUrl(postData['author']),
+                    builder: (context, imageSnapshot) {
+                      final authorImageUrl = imageSnapshot.data ?? '';
+
+                      return GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            CupertinoPageRoute(
+                              builder: (context) => ViewPostPage(
+                                postId: post.id,
+                                title: postData['title'] ?? '',
+                                content: postData['content'] ?? '',
+                                category: postData['category'] ?? '',
+                                author: authorName,
+                                time: postTime,
+                                likes: postLikes,
+                                imageUrl: '',
+                                comments: [], 
+                                userId: user?.uid ?? '',
                               ),
-                            SizedBox(height: 8),
-                            Text('Author: $authorName',
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.bold, fontSize: 14)),
-                            Text('Posted on: $postTime',
-                                style: const TextStyle(
-                                    color: Colors.grey, fontSize: 12)),
-                            if (postData['category'] != null)
-                              Text('Category: ${postData['category']}',
-                                  style: const TextStyle(
-                                      fontStyle: FontStyle.italic,
-                                      fontSize: 12,
-                                      color: Colors.grey)),
-                            Divider(color: Colors.grey.shade400, thickness: 1),
-                            Text(postData['title'] ?? 'No Title',
-                                style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black)),
-                            SizedBox(height: 4),
-                            Text(
-                              postData['content'] ?? 'No Content Available',
-                              style: const TextStyle(fontSize: 14),
-                              maxLines: 12,
-                              overflow: TextOverflow.ellipsis,
                             ),
-                            Divider(color: Colors.grey.shade400, thickness: 1),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          );
+                        },
+                        child: Card(
+                          margin: const EdgeInsets.symmetric(
+                              horizontal: 20.0, vertical: 10.0),
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
+                                if (postData['imageUrl'] != null &&
+                                    postData['imageUrl'].isNotEmpty)
+                                  Container(
+                                    width: double.infinity,
+                                    height: 300,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(8),
+                                      image: DecorationImage(
+                                        image: NetworkImage(postData['imageUrl'] ?? ''),
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                  ),
+                                SizedBox(height: 8),
                                 Row(
                                   children: [
-                                    IconButton(
-                                      icon: Icon(
-                                        postLikes.contains(user?.uid)
-                                            ? CupertinoIcons.hand_thumbsup_fill
-                                            : CupertinoIcons.hand_thumbsup,
-                                        color: postLikes.contains(user?.uid)
-                                            ? CupertinoColors.activeBlue
-                                            : CupertinoColors.inactiveGray,
-                                      ),
-                                      onPressed: () =>
-                                          _togglePostLike(post.id, postLikes),
+                                    CircleAvatar(
+                                      radius: 20,
+                                      backgroundImage: authorImageUrl.isNotEmpty
+                                          ? NetworkImage(authorImageUrl)
+                                          : const AssetImage(
+                                              'assets/images/defaultprofile.png')
+                                              as ImageProvider,
                                     ),
-                                    Text('${postLikes.length} Likes'),
+                                    SizedBox(width: 8),
+                                    Text('$authorName',
+                                        style: const TextStyle(
+                                            fontWeight: FontWeight.bold, fontSize: 14)),
                                   ],
                                 ),
+                                Text('Posted on: $postTime',
+                                    style: const TextStyle(
+                                        color: Colors.grey, fontSize: 12)),
+                                if (postData['category'] != null)
+                                  Text('Category: ${postData['category']}',
+                                      style: const TextStyle(
+                                          fontStyle: FontStyle.italic,
+                                          fontSize: 12,
+                                          color: Colors.grey)),
+                                Divider(color: Colors.grey.shade400, thickness: 1),
+                                Text(postData['title'] ?? 'No Title',
+                                    style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.black)),
+                                SizedBox(height: 4),
+                                Text(
+                                  postData['content'] ?? 'No Content Available',
+                                  style: const TextStyle(fontSize: 14),
+                                  maxLines: 12,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                Divider(color: Colors.grey.shade400, thickness: 1),
                                 Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Icon(
-                                      CupertinoIcons.chat_bubble_text,
-                                      color: CupertinoColors.inactiveGray,
+                                    Row(
+                                      children: [
+                                        IconButton(
+                                          icon: Icon(
+                                            postLikes.contains(user?.uid)
+                                                ? CupertinoIcons.hand_thumbsup_fill
+                                                : CupertinoIcons.hand_thumbsup,
+                                            color: postLikes.contains(user?.uid)
+                                                ? CupertinoColors.activeBlue
+                                                : CupertinoColors.inactiveGray,
+                                          ),
+                                          onPressed: () =>
+                                              _togglePostLike(post.id, postLikes),
+                                        ),
+                                        Text('${postLikes.length} Likes'),
+                                      ],
                                     ),
-                                    SizedBox(width: 4),
-                                      StreamBuilder<QuerySnapshot>(
-                                        stream: FirebaseFirestore.instance
-                                            .collection('posts')
-                                            .doc(post.id)
-                                            .collection('comments')
-                                            .snapshots(),
-                                        builder: (context, commentSnapshot) {
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          CupertinoIcons.chat_bubble_text,
+                                          color: CupertinoColors.inactiveGray,
+                                        ),
+                                        SizedBox(width: 4),
+                                        StreamBuilder<QuerySnapshot>(
+                                          stream: FirebaseFirestore.instance
+                                              .collection('posts')
+                                              .doc(post.id)
+                                              .collection('comments')
+                                              .snapshots(),
+                                          builder: (context, commentSnapshot) {
+                                            final commentCount =
+                                                commentSnapshot.data?.docs.length ?? 0;
 
-                                          final commentCount = commentSnapshot.data?.docs.length ?? 0;
-
-                                          return Text(
-                                            '$commentCount Comments',
-                                            style: const TextStyle(fontSize: 13),
-                                          );
-                                        },
-                                      ),
-
+                                            return Text(
+                                              '$commentCount Comments',
+                                              style: const TextStyle(fontSize: 13),
+                                            );
+                                          },
+                                        ),
+                                      ],
+                                    ),
                                   ],
                                 ),
                               ],
                             ),
-                          ],
+                          ),
                         ),
-                      ),
-                    ),
+                      );
+                    },
                   );
                 },
               );

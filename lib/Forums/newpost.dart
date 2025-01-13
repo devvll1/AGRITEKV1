@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
@@ -41,10 +42,20 @@ class _NewPostPageState extends State<NewPostPage> {
     }
   }
 
-  Future<String?> _uploadImage(File image) async {
-    // Assuming you have an image upload implementation (e.g., Firebase Storage)
-    // Upload the image and return the URL of the uploaded image.
-    return 'https://path/to/uploaded/image'; // Placeholder
+  Future<String?> _uploadImage(File image, String docId) async {
+    try {
+      final storageRef = FirebaseStorage.instance
+          .ref()
+          .child('posts')
+          .child('$docId.jpg'); // Use docId to uniquely name the image
+      final uploadTask = await storageRef.putFile(image);
+      return await uploadTask.ref.getDownloadURL();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error uploading image: $e')),
+      );
+      return null;
+    }
   }
 
   Future<void> _submitPost() async {
@@ -71,20 +82,30 @@ class _NewPostPageState extends State<NewPostPage> {
       _isSubmitting = true;
     });
 
-    String? imageUrl;
-    if (_selectedImage != null) {
-      imageUrl = await _uploadImage(_selectedImage!);
-    }
-
     try {
-      await FirebaseFirestore.instance.collection('posts').add({
+      // Create a new document in the "posts" collection
+      final docRef = FirebaseFirestore.instance.collection('posts').doc();
+
+      // Build the post data
+      final postData = {
         'title': _titleController.text.trim(),
         'content': _contentController.text.trim(),
         'category': _selectedCategory,
         'author': user?.uid,
         'timestamp': FieldValue.serverTimestamp(),
-        'imageUrl': imageUrl ?? '', // Ensure empty string if no image is uploaded
-      });
+        'imageUrl': '', // Placeholder for image URL
+      };
+
+      // Save the initial document
+      await docRef.set(postData);
+
+      // If an image is selected, upload it and update the document
+      if (_selectedImage != null) {
+        final imageUrl = await _uploadImage(_selectedImage!, docRef.id);
+        if (imageUrl != null) {
+          await docRef.update({'imageUrl': imageUrl});
+        }
+      }
 
       Navigator.of(context).pop('Post Added'); // Notify parent of success
     } catch (e) {
