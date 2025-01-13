@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
@@ -76,7 +77,25 @@ class WeatherScreenState extends State<WeatherScreen> {
 
       if (mounted) {
         setState(() {
-          weather = 'Partly Cloudy'; // Example description
+          weather = data['current_weather']['weathercode'] == 0
+              ? 'Clear'
+              : data['current_weather']['weathercode'] == 1
+                  ? 'Mainly Clear'
+                  : data['current_weather']['weathercode'] == 2
+                      ? 'Partly Cloudy'
+                      : data['current_weather']['weathercode'] == 3
+                          ? 'Overcast'
+                          : data['current_weather']['weathercode'] == 45 || data['current_weather']['weathercode'] == 48
+                              ? 'Foggy'
+                              : data['current_weather']['weathercode'] == 51 || data['current_weather']['weathercode'] == 53 || data['current_weather']['weathercode'] == 55
+                                  ? 'Drizzle'
+                                  : data['current_weather']['weathercode'] == 61 || data['current_weather']['weathercode'] == 63 || data['current_weather']['weathercode'] == 65
+                                      ? 'Rain'
+                                      : data['current_weather']['weathercode'] == 71 || data['current_weather']['weathercode'] == 73 || data['current_weather']['weathercode'] == 75
+                                          ? 'Snow'
+                                          : data['current_weather']['weathercode'] == 95 || data['current_weather']['weathercode'] == 96 || data['current_weather']['weathercode'] == 99
+                                              ? 'Thunderstorm'
+                                              : 'Unknown';
           temperature = data['current_weather']['temperature'];
           humidity = data['hourly']['relativehumidity_2m']?[0] ?? 0;
           windSpeed = data['current_weather']['windspeed'];
@@ -300,7 +319,7 @@ class WeatherScreenState extends State<WeatherScreen> {
                         Expanded(
                           child: Column(
                             children: [
-                              const Icon(Icons.air, size: 40, color: Colors.blue),
+                              const Icon(CupertinoIcons.wind, size: 40, color: Colors.blue),
                               const SizedBox(height: 8),
                               Text(
                                 '${windSpeed.toStringAsFixed(1)} km/h',
@@ -322,7 +341,7 @@ class WeatherScreenState extends State<WeatherScreen> {
                         Expanded(
                           child: Column(
                             children: [
-                              const Icon(Icons.water_drop, size: 40, color: Colors.blue),
+                              const Icon(CupertinoIcons.drop_fill, size: 40, color: Colors.blue),
                               const SizedBox(height: 8),
                               Text(
                                 '$humidity%',
@@ -344,7 +363,7 @@ class WeatherScreenState extends State<WeatherScreen> {
                         Expanded(
                           child: Column(
                             children: [
-                              const Icon(Icons.cloud_queue, size: 40, color: Colors.blue),
+                              const Icon(CupertinoIcons.cloud_rain, size: 40, color: Colors.blue),
                               const SizedBox(height: 8),
                               Text(
                                 '${precipChance.toStringAsFixed(0)}%',
@@ -368,6 +387,7 @@ class WeatherScreenState extends State<WeatherScreen> {
                   ),
                 ),
               ),
+
             ],
           ),
         ],

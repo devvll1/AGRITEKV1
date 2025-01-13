@@ -1,6 +1,7 @@
 // ignore_for_file: library_private_types_in_public_api
 
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart'; // Import Cupertino icons
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -179,18 +180,56 @@ class _SevenDaysForecastScreenState extends State<SevenDaysForecastScreen> {
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('Max Temp: ${day['maxTemp']}°C'),
-                                Text('Min Temp: ${day['minTemp']}°C'),
-                                Text(
-                                    'Precipitation Chance: ${day['precipitationChance']}%'),
+                                Row(
+                                  children: [
+                                    const Icon(CupertinoIcons.thermometer,
+                                        size: 20),
+                                    const SizedBox(width: 8),
+                                    Text('Max Temp: ${day['maxTemp']}°C'),
+                                  ],
+                                ),
+                                Row(
+                                  children: [
+                                    const Icon(CupertinoIcons.snow, size: 20),
+                                    const SizedBox(width: 8),
+                                    Text('Min Temp: ${day['minTemp']}°C'),
+                                  ],
+                                ),
+                                Row(
+                                  children: [
+                                    const Icon(CupertinoIcons.cloud_rain,
+                                        size: 20),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                        'Precipitation: ${day['precipitationChance']}%'),
+                                  ],
+                                ),
                               ],
                             ),
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
-                                Text('Wind: ${day['windSpeed']} km/h'),
-                                Text('Wind Gust: ${day['windGust']} km/h'),
-                                Text(day['description']),
+                                Row(
+                                  children: [
+                                    const Icon(CupertinoIcons.wind, size: 20),
+                                    const SizedBox(width: 8),
+                                    Text('Wind: ${day['windSpeed']} km/h'),
+                                  ],
+                                ),
+                                Row(
+                                  children: [
+                                    const Icon(CupertinoIcons.wind, size: 20),
+                                    const SizedBox(width: 8),
+                                    Text('Gust: ${day['windGust']} km/h'),
+                                  ],
+                                ),
+                                Row(
+                                  children: [
+                                    const Icon(CupertinoIcons.cloud, size: 20),
+                                    const SizedBox(width: 8),
+                                    Text(day['description']),
+                                  ],
+                                ),
                               ],
                             ),
                           ],
