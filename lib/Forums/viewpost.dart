@@ -14,6 +14,7 @@ class ViewPostPage extends StatefulWidget {
   final String time;
   final List<dynamic> likes;
   final String imageUrl;
+  
 
   const ViewPostPage({
     super.key,
@@ -40,8 +41,12 @@ class _ViewPostPageState extends State<ViewPostPage> {
   List<dynamic> _postLikes = [];
   bool _hasLiked = false;
   String? _postImageUrl;
+  String? _authorFullName;
+  late String _title;
+  late String _content;
+  late String _category;
   
-
+  
   @override
   void initState() {
     super.initState();
@@ -49,6 +54,10 @@ class _ViewPostPageState extends State<ViewPostPage> {
     _fetchUserProfile();
     _fetchPostLikes();
      _fetchPostImageUrl();
+     _fetchPostAuthor(widget.author);
+      _title = widget.title;
+      _content = widget.content;
+      _category = widget.category;
 
   }
 
@@ -57,6 +66,362 @@ void dispose() {
   _commentController.dispose();
   super.dispose();
 }
+
+Future<void> _editPost() async {
+  final titleController = TextEditingController(text: _title);
+  final contentController = TextEditingController(text: _content);
+
+  String updatedCategory = _category;
+
+  final updatedPost = await showDialog<Map<String, String>>(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: const Text('Edit Post'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: titleController,
+                decoration: const InputDecoration(labelText: 'Title'),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: contentController,
+                decoration: const InputDecoration(labelText: 'Content'),
+                maxLines: 4,
+              ),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<String>(
+                value: updatedCategory,
+                items: const [
+                  DropdownMenuItem(
+                    value: 'Crop Farming',
+                    child: Text('Crop Farming'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'Livestock',
+                    child: Text('Livestock'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'Aquafisheries',
+                    child: Text('Aquafisheries'),
+                  ),
+                ],
+                onChanged: (value) {
+                  if (value != null) {
+                    updatedCategory = value;
+                  }
+                },
+                decoration: const InputDecoration(labelText: 'Category'),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(null),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              final updatedTitle = titleController.text.trim();
+              final updatedContent = contentController.text.trim();
+
+              Navigator.of(context).pop({
+                'title': updatedTitle,
+                'content': updatedContent,
+                'category': updatedCategory,
+              });
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      );
+    },
+  );
+
+  if (updatedPost == null) return;
+
+  try {
+    final postRef = FirebaseFirestore.instance.collection('posts').doc(widget.postId);
+
+    await postRef.update({
+      'title': updatedPost['title'],
+      'content': updatedPost['content'],
+      'category': updatedPost['category'],
+    });
+
+    setState(() {
+      _title = updatedPost['title']!;
+      _content = updatedPost['content']!;
+      _category = updatedPost['category']!;
+    });
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Post updated successfully')),
+      );
+    }
+
+    // Navigate back to the ViewPostPage after editing
+    Navigator.of(context).pushReplacement(
+      CupertinoPageRoute(
+        builder: (context) => ViewPostPage(
+          userId: widget.userId,
+          postId: widget.postId,
+          title: _title,
+          content: _content,
+          category: _category,
+          author: widget.author,
+          time: widget.time,
+          likes: widget.likes,
+          imageUrl: widget.imageUrl,
+          comments: [], // Provide existing comments if necessary
+        ),
+      ),
+    );
+  } catch (e) {
+    debugPrint('Error updating post: $e');
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to update post')),
+      );
+    }
+  }
+}
+
+
+Future<void> _fetchPostAuthor(String userId) async {
+  try {
+    final userDoc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
+
+    if (userDoc.exists) {
+      final data = userDoc.data();
+      final firstName = data?['firstName'] ?? 'Unknown';
+      final lastName = data?['lastName'] ?? 'User';
+
+      setState(() {
+        _authorFullName = '$firstName $lastName'; // Full name of the author
+      });
+    } else {
+      debugPrint('User document not found for userId: $userId');
+    }
+  } catch (e) {
+    debugPrint('Error fetching post author profile: $e');
+  }
+}
+
+
+Future<void> _deletePost() async {
+  final currentUser = FirebaseAuth.instance.currentUser;
+
+  // Check if the current user is logged in and is the post owner
+  final isOwner = currentUser != null && currentUser.uid == widget.author;
+  debugPrint('Current User ID: ${currentUser?.uid}');
+  debugPrint('Post Author ID: ${widget.author}');
+
+  if (!isOwner) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('You are not authorized to delete this post.')),
+    );
+    return;
+  }
+
+  // Ask for confirmation before deletion
+  final confirmation = await showCupertinoDialog<bool>(
+    context: context,
+    builder: (BuildContext context) {
+      return CupertinoAlertDialog(
+        title: const Text('Delete Post'),
+        content: const Text('Are you sure you want to delete this post? This action cannot be undone.'),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          CupertinoDialogAction(
+            onPressed: () => Navigator.of(context).pop(true),
+            isDestructiveAction: true,
+            child: const Text('Delete'),
+          ),
+        ],
+      );
+    },
+  );
+
+  if (confirmation != true) return;
+
+  try {
+    // Create a Firestore batch to delete the post and its comments
+    final postRef = FirebaseFirestore.instance.collection('posts').doc(widget.postId);
+    WriteBatch batch = FirebaseFirestore.instance.batch();
+
+    // Delete all comments under the post
+    final commentsQuery = await postRef.collection('comments').get();
+    for (var commentDoc in commentsQuery.docs) {
+      batch.delete(commentDoc.reference);
+    }
+
+    // Delete the post itself
+    batch.delete(postRef);
+
+    // Commit the batch
+    await batch.commit();
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Post deleted successfully')),
+    );
+
+    // Navigate back after deletion
+    Navigator.of(context).pop(); // Close the dialog or go back to the previous screen
+  } catch (e) {
+    debugPrint('Error deleting post: $e');
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Failed to delete post')),
+    );
+  }
+}
+
+
+
+Future<void> _deleteComment(DocumentReference commentRef) async {
+  final currentUser = FirebaseAuth.instance.currentUser;
+
+  if (currentUser == null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('You must be logged in to delete a comment.')),
+    );
+    return;
+  }
+
+  // Show confirmation dialog
+  final confirmation = await showCupertinoDialog<bool>(
+    context: context,
+    builder: (BuildContext context) {
+      return CupertinoAlertDialog(
+        title: const Text('Delete Comment'),
+        content: const Text('Are you sure you want to delete this comment? This action cannot be undone.'),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          CupertinoDialogAction(
+            onPressed: () => Navigator.of(context).pop(true),
+            isDestructiveAction: true,
+            child: const Text('Delete'),
+          ),
+        ],
+      );
+    },
+  );
+
+  if (confirmation != true) return;
+
+  try {
+    final commentSnapshot = await commentRef.get();
+
+    if (commentSnapshot.exists) {
+      final commentData = commentSnapshot.data() as Map<String, dynamic>;
+
+      // Allow only the comment owner to delete
+      if (commentData['userId'] == currentUser.uid) {
+        await commentRef.delete();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Comment deleted successfully')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('You are not authorized to delete this comment.')),
+        );
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Comment not found.')),
+      );
+    }
+  } catch (e) {
+    debugPrint('Error deleting comment: $e');
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Failed to delete comment')),
+    );
+  }
+}
+
+Future<void> _editComment(DocumentReference commentRef, String oldCommentText) async {
+  final currentUser = FirebaseAuth.instance.currentUser;
+
+  if (currentUser == null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('You must be logged in to edit a comment.')),
+    );
+    return;
+  }
+
+  // Show dialog to edit the comment
+  final TextEditingController editController = TextEditingController(text: oldCommentText);
+
+  final newComment = await showDialog<String>(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: const Text('Edit Comment'),
+        content: TextField(
+          controller: editController,
+          decoration: const InputDecoration(labelText: 'Edit your comment'),
+          maxLines: 3,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(null),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              final editedText = editController.text.trim();
+              Navigator.of(context).pop(editedText);
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      );
+    },
+  );
+
+  if (newComment == null || newComment.isEmpty || newComment == oldCommentText) return;
+
+  try {
+    final commentSnapshot = await commentRef.get();
+
+    if (commentSnapshot.exists) {
+      final commentData = commentSnapshot.data() as Map<String, dynamic>;
+
+      // Check if the current user is the author of the comment
+      if (commentData['userId'] == currentUser.uid) {
+        await commentRef.update({'text': newComment});
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Comment edited successfully')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('You are not authorized to edit this comment.')),
+        );
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Comment not found.')),
+      );
+    }
+  } catch (e) {
+    debugPrint('Error editing comment: $e');
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Failed to edit comment')),
+    );
+  }
+}
+
 
  Future<void> _fetchPostImageUrl() async {
     try {
@@ -223,7 +588,7 @@ void dispose() {
         'timestamp': FieldValue.serverTimestamp(),
         'author': '$firstName $lastName',
         'userId': user.uid,
-        'profileImageUrl': userData['profileImageUrl'], // Added profile image URL
+        'profileImageUrl': userData['profileImageUrl'] ?? 'assets/images/defaultprofile.png',
       };
 
       await FirebaseFirestore.instance
@@ -242,20 +607,37 @@ void dispose() {
   }
 @override
 Widget build(BuildContext context) {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    final isOwner = currentUser != null && currentUser.uid == widget.author;
+    debugPrint('Current User ID: ${currentUser?.uid}');
+    debugPrint('Post Author ID: ${widget.author}');
+
   return DefaultTextStyle(
     style: const TextStyle(
       fontFamily: 'Poppins',
       fontSize: 14,
       color: Colors.black,
     ),
-    child: CupertinoPageScaffold(
+
+        child: CupertinoPageScaffold(
       navigationBar: CupertinoNavigationBar(
-        middle: Text(
-          widget.title,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        middle: Text(widget.title, style: const TextStyle(fontWeight: FontWeight.bold)),
+        trailing: isOwner
+            ? Row(
+                mainAxisSize: MainAxisSize.min, // Ensures the buttons fit properly
+                children: [
+                  GestureDetector(
+                    onTap: _editPost, // Call your edit function
+                    child: const Icon(CupertinoIcons.pencil, color: CupertinoColors.activeBlue),
+                  ),
+                  const SizedBox(width: 16), // Add spacing between the icons
+                  GestureDetector(
+                    onTap: _deletePost,
+                    child: const Icon(CupertinoIcons.delete, color: CupertinoColors.destructiveRed),
+                  ),
+                ],
+              )
+            : null,
       ),
       child: SafeArea(
         child: Column(
@@ -283,7 +665,7 @@ Widget build(BuildContext context) {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                widget.author,
+                                _authorFullName ?? 'Fetching author...',
                                 style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
@@ -475,6 +857,30 @@ Widget build(BuildContext context) {
                                                 color: Colors.grey,
                                               ),
                                             ),
+                                            const SizedBox(height: 8),
+              // Add delete button for the comment
+                                           if (currentUser?.uid == commentData['userId']) // Check if current user is the author
+                                              Row(
+                                                children: [
+                                                  GestureDetector(
+                                                    onTap: () => _editComment(comments[index].reference, commentData['text']),
+                                                    child: const Icon(
+                                                      CupertinoIcons.pencil,
+                                                      color: CupertinoColors.activeBlue,
+                                                      size: 18,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 8), // Spacing between icons
+                                                  GestureDetector(
+                                                    onTap: () => _deleteComment(comments[index].reference),
+                                                    child: const Icon(
+                                                      CupertinoIcons.delete,
+                                                      color: CupertinoColors.destructiveRed,
+                                                      size: 18,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
                                           ],
                                         ),
                                       ),
@@ -539,3 +945,4 @@ Widget build(BuildContext context) {
   );
   }
 }
+

@@ -127,7 +127,7 @@ class _ForumsPageState extends State<ForumsPage> {
                                 title: postData['title'] ?? '',
                                 content: postData['content'] ?? '',
                                 category: postData['category'] ?? '',
-                                author: authorName,
+                                author: postData['author'] ?? '',
                                 time: postTime,
                                 likes: postLikes,
                                 imageUrl: '',
