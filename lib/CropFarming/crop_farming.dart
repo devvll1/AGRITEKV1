@@ -32,6 +32,12 @@ class CropFarmingScreenState extends State<CropFarmingScreen> {
       appBar: AppBar(
         title: const Text("Crop Farming"),
         backgroundColor: Colors.green,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -101,7 +107,6 @@ class CropFarmingScreenState extends State<CropFarmingScreen> {
               child: ElevatedButton(
                 onPressed: () {
                   Navigator.pushNamed(context, '/croptypes');
-                 
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
@@ -121,25 +126,6 @@ class CropFarmingScreenState extends State<CropFarmingScreen> {
             ),
           ],
         ),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        selectedItemColor: Colors.green,
-        unselectedItemColor: Colors.grey,
-        onTap: _onBottomNavItemTapped,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.view_module),
-            label: 'Modules',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.forum),
-            label: 'Forums',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.notifications),
-            label: 'Updates',
-          ),
-        ],
       ),
     );
   }

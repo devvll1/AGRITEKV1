@@ -84,54 +84,34 @@ class TypeOfCropsScreenState extends State<TypeOfCropsScreen> {
         padding: const EdgeInsets.all(8.0),
         children: [
           _buildCropTile(
-            'images/vegetables.jpg',
+            '/images/vegetables.jpg',
             'Vegetables',
             'A plant or part of a plant used as food.',
             '/vegetables',
           ),
           _buildCropTile(
-            'images/fruits.jpg',
+            '/images/fruits.jpg',
             'Fruits',
             'The sweet and fleshy product of a tree or other plant that contains seed and can be eaten as food.',
             '/fruits',
           ),
           _buildCropTile(
-            'images/grains.jpg',
+            '/images/grains.jpg',
             'Grains',
             'A seed or fruit of a cereal grass.',
             '/grains',
           ),
           _buildCropTile(
-            'images/legumes.jpg',
+            '/images/legumes.jpg',
             'Legumes',
             'The fruit or seed of leguminous plants (as peas or beans) used for food.',
             '/legumes',
           ),
           _buildCropTile(
-            'images/grass.jpg',
+            '/images/grass.jpg',
             'Grass',
             'Green plants that grow in the ground, used as feed for animals or for lawns.',
             '/grass',
-          ),
-        ],
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        selectedItemColor: Colors.green,
-        unselectedItemColor: Colors.grey,
-        onTap: _onBottomNavItemTapped,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.view_module),
-            label: 'Modules',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.forum),
-            label: 'Forums',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.notifications),
-            label: 'Updates',
           ),
         ],
       ),

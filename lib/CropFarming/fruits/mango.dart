@@ -226,7 +226,6 @@ class MangoDetailScreenState extends State<MangoDetailScreen> {
           ],
         ),
       ),
-      bottomNavigationBar: _buildBottomNavigationBar(),
     );
   }
 
@@ -239,7 +238,7 @@ class MangoDetailScreenState extends State<MangoDetailScreen> {
         child: Row(
           children: [
             Image.asset(
-              'images/fruits/mango.jpg', // Local mango image
+              'images/Mango.jpg', // Local mango image
               height: 80,
               width: 80,
               fit: BoxFit.cover,
@@ -328,30 +327,5 @@ class MangoDetailScreenState extends State<MangoDetailScreen> {
         },
       );
     });
-  }
-
-  Widget _buildBottomNavigationBar() {
-    return BottomNavigationBar(
-      selectedItemColor: Colors.green,
-      unselectedItemColor: Colors.grey,
-      onTap: (index) {
-        switch (index) {
-          case 0:
-            Navigator.pushNamed(context, '/home');
-            break;
-          case 1:
-            // Navigate to forums
-            break;
-          case 2:
-            // Navigate to updates
-            break;
-        }
-      },
-      items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.view_module), label: 'Modules'),
-        BottomNavigationBarItem(icon: Icon(Icons.forum), label: 'Forums'),
-        BottomNavigationBarItem(icon: Icon(Icons.notifications), label: 'Updates'),
-      ],
-    );
   }
 }

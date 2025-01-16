@@ -88,7 +88,6 @@ class FarmGuidePage extends StatefulWidget {
 class FarmGuidePageState extends State<FarmGuidePage> {
 
   void _onItemTapped(int index) {
-
     switch (index) {
       case 0:
         Navigator.pushNamed(context, '/home');
@@ -110,11 +109,11 @@ class FarmGuidePageState extends State<FarmGuidePage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('AgriTek'),
-        leading: Builder(
-          builder: (BuildContext context) => IconButton(
-            icon: const Icon(Icons.menu),
-            onPressed: () => Scaffold.of(context).openDrawer(),
-          ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.pop(context);  // Go back when back button is pressed
+          },
         ),
         actions: [
           IconButton(
@@ -129,43 +128,6 @@ class FarmGuidePageState extends State<FarmGuidePage> {
           ),
           const SizedBox(width: 8),
         ],
-      ),
-      drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: <Widget>[
-            const DrawerHeader(
-              decoration: BoxDecoration(color: Colors.green),
-              child: Text(
-                'AgriTek',
-                style: TextStyle(color: Colors.white, fontSize: 24),
-              ),
-            ),
-            ListTile(
-              title: const Text('Home'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushReplacementNamed(context, '/homepage');
-              },
-            ),
-            ListTile(
-              title: const Text('Forums'),
-              onTap: () => Navigator.pushNamed(context, '/forums'),
-            ),
-            ListTile(
-              title: const Text('Updates'),
-              onTap: () => Navigator.pushNamed(context, '/weather'),
-            ),
-            ListTile(
-              title: const Text('Logout'),
-              onTap: () async {
-                Navigator.pop(context);
-                await widget.signOut();
-                Navigator.pushReplacementNamed(context, '/login');
-              },
-            ),
-          ],
-        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),

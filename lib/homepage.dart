@@ -1,3 +1,4 @@
+import 'package:agritek/Updates/market.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -373,7 +374,7 @@ Future<void> _getCurrentLocation() async {
           Container(
             width: MediaQuery.of(context).size.width * 0.4, // Adjust width as needed
             height: 90, // Adjust height to make it a small rectangle
-            child: _buildMenuButton("Updates", context, const WeatherScreen(), CupertinoIcons.cloud),
+            child: _buildMenuButton("Updates", context, const MarketScreen(), CupertinoIcons.cart_fill),
           ),
           Container(
             width: MediaQuery.of(context).size.width * 0.4, // Adjust width as needed

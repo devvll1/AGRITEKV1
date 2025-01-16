@@ -15,11 +15,7 @@ class VegetablesApp extends StatelessWidget {
 
 class VegetablesScreen extends StatelessWidget {
   final List<Map<String, String>> vegetables = [
-    {'name': 'Ampalaya (Bitter Melon)', 'image': 'images/vegetables/Ampalaya.png'},
-    {'name': 'Upo (Bottle Gourd)', 'image': 'images/vegetables/Upo.jpg'},
-    {'name': 'Sayote (Chayote)', 'image': 'images/vegetables/Sayote.jpg'},
-    {'name': 'Talong (Eggplant)', 'image': 'images/vegetables/Talong.jpg'},
-    {'name': 'Okra', 'image': 'images/vegetables/Okra.jpg'},
+    {'name': 'Upo (Bottle Gourd)', 'image': '/images/Upo.jpg'},
   ];
 
   VegetablesScreen({super.key});
@@ -82,11 +78,6 @@ class VegetablesScreen extends StatelessWidget {
                   title: Text(vegetables[index]['name']!),
                   trailing: const Icon(Icons.more_vert),
                   onTap: () {
-                    // Navigate to details page or perform action
-                    if (vegetables[index]['name'] ==
-                        'Ampalaya (Bitter Melon)') {
-                      Navigator.pushNamed(context, '/ampalaya');
-                    }
                     if (vegetables[index]['name'] ==
                         'Upo (Bottle Gourd)') {
                       Navigator.pushNamed(context, '/upo');

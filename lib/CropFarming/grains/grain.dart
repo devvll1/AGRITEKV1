@@ -15,24 +15,11 @@ class GrainsApp extends StatelessWidget {
 
 class GrainsScreen extends StatelessWidget {
   final List<Map<String, String>> grains = [
-    {'name': 'Corn', 'image': 'images/grains/corn.jpg'},
+    {'name': 'Corn', 'image': '/images/corn.jpg'},
   ];
 
   GrainsScreen({super.key});
 
-  void _onBottomNavItemTapped(BuildContext context, int index) {
-    switch (index) {
-      case 0:
-        Navigator.pushNamed(context, '/home'); // Replace with actual HomePage
-        break;
-      case 1:
-
-        break;
-      case 2:
-        Navigator.pushNamed(context, '/weather');
-        break;
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -87,25 +74,6 @@ class GrainsScreen extends StatelessWidget {
                 );
               },
             ),
-          ),
-        ],
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        selectedItemColor: Colors.green,
-        unselectedItemColor: Colors.grey,
-        onTap: (index) => _onBottomNavItemTapped(context, index),
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.view_module),
-            label: 'Modules',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.forum),
-            label: 'Forums',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.notifications),
-            label: 'Updates',
           ),
         ],
       ),

@@ -25,6 +25,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
     'Mixed Farmer',
     'Aquaculture Farmer',
     'Forestry Farmer',
+    'Aspiring Farmer'
   ];
 
   // Save Profile Info

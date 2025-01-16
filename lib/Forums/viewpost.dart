@@ -59,6 +59,10 @@ class _ViewPostPageState extends State<ViewPostPage> {
       _content = widget.content;
       _category = widget.category;
 
+      if (widget.author.isNotEmpty) {
+          _fetchAuthorProfile(widget.author);
+  }
+
   }
 
 @override
@@ -470,26 +474,37 @@ Future<void> _editComment(DocumentReference commentRef, String oldCommentText) a
 
 
   Future<void> _fetchAuthorProfile(String userId) async {
-    try {
-      // Ensure that you're querying by the user ID.
-      final userDoc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
+  try {
+    // Fetch the user document using the provided userId (author's UID)
+    final userDoc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
 
-      if (userDoc.exists) {
-        final data = userDoc.data();
-        print("Fetched Author Data: $data"); // Debugging line to check fetched data.
-        final profileImageUrl = data?['profileImageUrl'] ?? '';
-        setState(() {
-          _authorProfileImageUrl = profileImageUrl.isNotEmpty
-              ? profileImageUrl
-              : 'assets/images/defaultprofile.png'; // Fallback to default if empty
-        });
-      } else {
-        debugPrint('User document not found');
-      }
-    } catch (e) {
-      debugPrint('Error fetching author profile: $e');
+    if (userDoc.exists) {
+      final data = userDoc.data();
+      print("Fetched Author Data: $data"); // Debugging line to check fetched data.
+      final profileImageUrl = data?['profileImageUrl'] ?? '';  // Get profileImageUrl or empty string
+
+      setState(() {
+        // If the profile image URL is not empty, use it. Otherwise, use the default profile image.
+        _authorProfileImageUrl = profileImageUrl.isNotEmpty
+            ? profileImageUrl
+            : 'assets/images/defaultprofile.png';  // Fallback to default image if empty
+      });
+    } else {
+      debugPrint('User document not found');
+      // If no user document is found, set the default profile image
+      setState(() {
+        _authorProfileImageUrl = 'assets/images/defaultprofile.png';
+      });
     }
+  } catch (e) {
+    debugPrint('Error fetching author profile: $e');
+    // In case of an error, set the default profile image
+    setState(() {
+      _authorProfileImageUrl = 'assets/images/defaultprofile.png';
+    });
   }
+}
+
 
   Future<void> _fetchUserProfile() async {
     try {
@@ -683,17 +698,17 @@ Widget build(BuildContext context) {
                         ],
                       ),
                       const SizedBox(height: 8),
-                      // Post Image
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: GestureDetector(
-                          onTap: () {
-                            if (_postImageUrl != null && _postImageUrl!.isNotEmpty) {
-                              _showImagePopup(context, _postImageUrl!);
-                            }
-                          },
-                          child: _postImageUrl != null && _postImageUrl!.isNotEmpty
-                              ? Image.network(
+                     // Post Image
+                      _postImageUrl != null && _postImageUrl!.isNotEmpty
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: GestureDetector(
+                                onTap: () {
+                                  if (_postImageUrl != null && _postImageUrl!.isNotEmpty) {
+                                    _showImagePopup(context, _postImageUrl!);
+                                  }
+                                },
+                                child: Image.network(
                                   _postImageUrl!,
                                   height: 200,
                                   width: double.infinity,
@@ -709,21 +724,12 @@ Widget build(BuildContext context) {
                                       ),
                                     );
                                   },
-                                  errorBuilder: (context, error, stackTrace) => const Image(
-                                    image: AssetImage('assets/images/defaultimg.png'),
-                                    height: 200,
-                                    width: double.infinity,
-                                    fit: BoxFit.cover,
-                                  ),
-                                )
-                              : const Image(
-                                  image: AssetImage('assets/images/defaultimg.png'),
-                                  height: 200,
-                                  width: double.infinity,
-                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(), // Empty space when image fails
                                 ),
-                        ),
-                      ),
+                              ),
+                            )
+                          : const SizedBox.shrink(),  // Don't show anything when there's no image
+
                       const SizedBox(height: 8),
                       // Post Date
                       Text(

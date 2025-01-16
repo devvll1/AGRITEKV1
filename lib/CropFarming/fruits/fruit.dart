@@ -15,7 +15,7 @@ class FruitsApp extends StatelessWidget {
 
 class FruitsScreen extends StatelessWidget {
   final List<Map<String, String>> fruits = [
-    {'name': 'Mango', 'image': 'images/fruits/mango.jpg'},
+    {'name': 'Mango', 'image': '/images/mango.jpg'},
   ];
 
   FruitsScreen({super.key});
@@ -87,25 +87,6 @@ class FruitsScreen extends StatelessWidget {
                 );
               },
             ),
-          ),
-        ],
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        selectedItemColor: Colors.green,
-        unselectedItemColor: Colors.grey,
-        onTap: (index) => _onBottomNavItemTapped(context, index),
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.view_module),
-            label: 'Modules',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.forum),
-            label: 'Forums',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.notifications),
-            label: 'Updates',
           ),
         ],
       ),

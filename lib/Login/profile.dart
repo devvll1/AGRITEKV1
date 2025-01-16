@@ -31,7 +31,8 @@ class _ProfilePageState extends State<ProfilePage> {
     'Livestock Farmer',
     'Aquaculture Farmer',
     'Forestry Farmer',
-    'Mixed Farmer'
+    'Mixed Farmer',
+    'Aspiring Farmer'
   ];
 
   @override
@@ -209,6 +210,17 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
+  Future<void> _signOut() async {
+    try {
+      await FirebaseAuth.instance.signOut();
+      Navigator.pushReplacementNamed(context, '/login'); // Navigate to login screen
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error signing out: $e')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -278,6 +290,19 @@ class _ProfilePageState extends State<ProfilePage> {
               label: const Text('Save Changes', style: TextStyle(fontSize: 15)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.green,
+                padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 30),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            ElevatedButton.icon(
+              onPressed: _signOut,
+              icon: const Icon(CupertinoIcons.arrow_right_circle_fill),
+              label: const Text('Sign Out', style: TextStyle(fontSize: 15)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
                 padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 30),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),

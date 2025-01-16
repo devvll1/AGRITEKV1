@@ -7,7 +7,6 @@ import 'package:agritek/CropFarming/grains/corn.dart';
 import 'package:agritek/CropFarming/grains/grain.dart';
 import 'package:agritek/CropFarming/grass/grass.dart';
 import 'package:agritek/CropFarming/legumes/legume.dart';
-import 'package:agritek/CropFarming/vegetables/ampalaya.dart';
 import 'package:agritek/CropFarming/vegetables/upo.dart';
 import 'package:agritek/CropFarming/vegetables/vegetable.dart';
 import 'package:agritek/FIsheries%20and%20Aquaculture/fisheries.dart';
@@ -70,7 +69,6 @@ class MyApp extends StatelessWidget {
 
         '/croptypes': (context) => const TypeOfCropsScreen(),
         '/vegetables': (context) => const VegetablesApp(),
-        '/ampalaya': (context) => const Ampalaya(),
         '/upo': (context) => const Upo(),
 
         '/fruits': (context) => const FruitsApp(),

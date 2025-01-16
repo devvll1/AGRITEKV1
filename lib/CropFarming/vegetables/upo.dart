@@ -106,7 +106,7 @@ class UpoDetailScreenState extends State<UpoDetailScreen> {
                 child: Row(
                   children: [
                     Image.asset(
-                      'images/vegetables/Upo.jpg',
+                      '/images/Upo.jpg',
                       height: 80,
                       width: 80,
                       fit: BoxFit.cover,
