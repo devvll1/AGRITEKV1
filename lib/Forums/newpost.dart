@@ -22,7 +22,11 @@ class _NewPostPageState extends State<NewPostPage> {
   File? _selectedImage;
   bool _isSubmitting = false;
 
-  final List<String> _categories = ['Crop Farming', 'Livestock', 'Aquafisheries'];
+  final List<String> _categories = [
+    'Crop Farming',
+    'Livestock',
+    'Aquafisheries'
+  ];
 
   @override
   void dispose() {

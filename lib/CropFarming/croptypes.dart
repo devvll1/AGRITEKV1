@@ -28,7 +28,8 @@ class TypeOfCropsScreenState extends State<TypeOfCropsScreen> {
     }
   }
 
-  Widget _buildCropTile(String imagePath, String title, String subtitle, String routeName) {
+  Widget _buildCropTile(
+      String imagePath, String title, String subtitle, String routeName) {
     return Column(
       children: [
         ListTile(
@@ -38,7 +39,8 @@ class TypeOfCropsScreenState extends State<TypeOfCropsScreen> {
               imagePath,
               width: 100,
               height: 100,
-              fit: BoxFit.cover, // Crops and fits the image within the container
+              fit:
+                  BoxFit.cover, // Crops and fits the image within the container
             ),
           ),
           title: Text(title),

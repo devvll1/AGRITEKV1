@@ -10,7 +10,8 @@ class StartupPage extends StatefulWidget {
   State<StartupPage> createState() => _StartupPageState();
 }
 
-class _StartupPageState extends State<StartupPage> with TickerProviderStateMixin {
+class _StartupPageState extends State<StartupPage>
+    with TickerProviderStateMixin {
   String? errorMessage = '';
   bool isLogin = true;
   bool _isObscured = true;
@@ -42,7 +43,8 @@ class _StartupPageState extends State<StartupPage> with TickerProviderStateMixin
   }
 
   bool isValidEmail(String email) {
-    final emailRegex = RegExp(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$");
+    final emailRegex =
+        RegExp(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$");
     return emailRegex.hasMatch(email);
   }
 
@@ -51,12 +53,12 @@ class _StartupPageState extends State<StartupPage> with TickerProviderStateMixin
     final password = _controllerPassword.text.trim();
 
     if (email.isEmpty || password.isEmpty) {
-      showError("Email and password must not be empty.");
+      showError("Please fill in both email and password fields.");
       return;
     }
 
     if (!isValidEmail(email)) {
-      showError("Invalid email format.");
+      showError("The email address entered is not valid. Please try again.");
       return;
     }
 
@@ -64,66 +66,27 @@ class _StartupPageState extends State<StartupPage> with TickerProviderStateMixin
       await Auth().signInWithEmailAndPassword(email: email, password: password);
       Navigator.pushNamed(context, '/homepage');
     } on FirebaseAuthException catch (e) {
-      if (e.code == 'user-not-found' || e.code == 'wrong-password') {
-        showError("Email or Password is incorrect.");
+      if (e.code == 'user-not-found') {
+        showError("No account found with this email. Please sign up first.");
+      } else if (e.code == 'wrong-password') {
+        showError("Incorrect password. Please try again.");
+      } else if (e.code == 'too-many-requests') {
+        showError("Too many login attempts. Please try again later.");
+      } else if (e.code == 'invalid-credential') {
+        showError(
+            "The credentials provided are invalid. Please check and try again.");
       } else {
-        showError(e.message ?? "An unknown error occurred.");
+        showError(
+            e.message ?? "An unexpected error occurred. Please try again.");
       }
+    } catch (e) {
+      showError(
+          "An error occurred while signing in. Please check your connection and try again.");
     }
   }
 
-  Future<void> resetPassword() async {
-    final email = _controllerEmail.text.trim();
-
-    if (email.isEmpty) {
-      showError("Please enter your email to reset your password.");
-      return;
-    }
-
-    if (!isValidEmail(email)) {
-      showError("Invalid email format.");
-      return;
-    }
-
-    try {
-      await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
-      showError("Password reset email sent! Check your inbox.");
-    } on FirebaseAuthException catch (e) {
-      showError(e.message ?? "An error occurred while resetting password.");
-    }
-  }
-
-  Future<void> createUserWithEmailAndPassword() async {
-    final email = _controllerEmail.text.trim();
-    final password = _controllerPassword.text.trim();
-
-    if (email.isEmpty || password.isEmpty) {
-      showError("Email and password must not be empty.");
-      return;
-    }
-
-    if (!isValidEmail(email)) {
-      showError("Invalid email format.");
-      return;
-    }
-
-    if (password.length < 6) {
-      showError("Password must be at least 6 characters long.");
-      return;
-    }
-
-    try {
-      await Auth().createUserWithEmailAndPassword(email: email, password: password);
-      Navigator.pushNamed(context, '/profileSetup');
-    } on FirebaseAuthException catch (e) {
-      if (e.code == 'email-already-in-use') {
-        showError("This email is already in use.");
-      } else if (e.code == 'weak-password') {
-        showError("Password is too weak.");
-      } else {
-        showError(e.message ?? "An unknown error occurred.");
-      }
-    }
+  void goToProfileSetup() {
+    Navigator.pushNamed(context, '/profileSetup');
   }
 
   void toggleForm() {
@@ -135,12 +98,11 @@ class _StartupPageState extends State<StartupPage> with TickerProviderStateMixin
   }
 
   void skipLogin() {
-  Navigator.pushReplacement(
-    context,
-    MaterialPageRoute(builder: (context) => const HomePage()),
-  );
-}
-
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const HomePage()),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -201,7 +163,7 @@ class _StartupPageState extends State<StartupPage> with TickerProviderStateMixin
                   const SizedBox(height: 20),
                   TextField(
                     controller: _controllerPassword,
-                    obscureText: _isObscured, // Use _isObscured to toggle visibility
+                    obscureText: _isObscured,
                     decoration: InputDecoration(
                       labelText: "Password",
                       labelStyle: const TextStyle(color: Colors.white),
@@ -219,7 +181,7 @@ class _StartupPageState extends State<StartupPage> with TickerProviderStateMixin
                         ),
                         onPressed: () {
                           setState(() {
-                            _isObscured = !_isObscured; // Toggle the visibility state
+                            _isObscured = !_isObscured;
                           });
                         },
                       ),
@@ -231,7 +193,7 @@ class _StartupPageState extends State<StartupPage> with TickerProviderStateMixin
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
-                      onPressed: resetPassword,
+                      onPressed: () {},
                       child: const Text(
                         "Forgot Password?",
                         style: TextStyle(
@@ -274,18 +236,18 @@ class _StartupPageState extends State<StartupPage> with TickerProviderStateMixin
                       ),
                     ),
                   ElevatedButton(
-                    onPressed: isLogin
-                        ? signInWithEmailAndPassword
-                        : createUserWithEmailAndPassword,
+                    onPressed:
+                        isLogin ? signInWithEmailAndPassword : goToProfileSetup,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.green.shade700,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(30),
                       ),
-                      padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 50, vertical: 15),
                     ),
                     child: Text(
-                      isLogin ? 'Login' : 'Register',
+                      isLogin ? 'Login' : 'Sign Up',
                       style: const TextStyle(fontSize: 16, color: Colors.white),
                     ),
                   ),
@@ -298,7 +260,15 @@ class _StartupPageState extends State<StartupPage> with TickerProviderStateMixin
                         style: const TextStyle(color: Colors.white),
                       ),
                       TextButton(
-                        onPressed: toggleForm,
+                        onPressed: () {
+                          if (isLogin) {
+                            // Navigate to the profile setup page directly when "Sign Up" is clicked
+                            goToProfileSetup();
+                          } else {
+                            // Toggle back to login form
+                            toggleForm();
+                          }
+                        },
                         child: Text(
                           isLogin ? "Sign Up" : "Login",
                           style: const TextStyle(
@@ -310,7 +280,6 @@ class _StartupPageState extends State<StartupPage> with TickerProviderStateMixin
                     ],
                   ),
                   const SizedBox(height: 20),
-                  // Continue Without Logging In
                   ElevatedButton(
                     onPressed: skipLogin,
                     style: ElevatedButton.styleFrom(
@@ -318,7 +287,8 @@ class _StartupPageState extends State<StartupPage> with TickerProviderStateMixin
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(30),
                       ),
-                      padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 50, vertical: 15),
                     ),
                     child: const Text(
                       'Continue Without Logging In',
