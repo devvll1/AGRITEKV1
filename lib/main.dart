@@ -22,9 +22,9 @@ import 'package:agritek/homepage.dart';
 import 'package:flutter/material.dart';
 import 'package:agritek/farmguide.dart';
 import 'package:agritek/Login/login.dart';
+import 'Login/change_password.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
-
 
 // Your custom color class
 class AppColor {
@@ -57,34 +57,27 @@ class MyApp extends StatelessWidget {
       routes: {
         '/login': (context) => const StartupPage(),
         '/profileSetup': (context) => const ProfileSetupPage(),
+        '/changePassword': (context) => const ChangePasswordPage(),
         '/profile': (context) => const ProfilePage(),
         '/homepage': (context) => const HomePage(),
         '/home': (context) => const FarmGuidePage(),
         '/cropfarming': (context) => const CropFarmingScreen(),
-        '/forestry' : (context) => const ForestryScreen(),
-        '/aquaculture' : (context) => const AquacultureScreen(),
-        '/livestock' : (context) => const LivestockScreen(),
+        '/forestry': (context) => const ForestryScreen(),
+        '/aquaculture': (context) => const AquacultureScreen(),
+        '/livestock': (context) => const LivestockScreen(),
         '/livestocklist': (context) => const LiveStockListScreen(),
         '/chicken': (context) => const Chicken(),
-
         '/croptypes': (context) => const TypeOfCropsScreen(),
         '/vegetables': (context) => const VegetablesApp(),
         '/upo': (context) => const Upo(),
-
         '/fruits': (context) => const FruitsApp(),
         '/mango': (context) => const Mango(),
-        
-
         '/grains': (context) => const GrainsApp(),
         '/corn': (context) => const Corn(),
-
         '/grass': (context) => const GrassApp(),
-
         '/legumes': (context) => const LegumesApp(),
-        
-        
-        '/weather' : (context) => const WeatherScreen(),
-        '/forecast' : (context) => const SevenDaysForecastScreen()
+        '/weather': (context) => const WeatherScreen(),
+        '/forecast': (context) => const SevenDaysForecastScreen()
       },
     );
   }

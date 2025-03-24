@@ -91,7 +91,10 @@ class _ProfilePageState extends State<ProfilePage> {
         _isUserLoggedIn = true;
       });
 
-      final snapshot = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      final snapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
 
       if (snapshot.exists) {
         setState(() {
@@ -115,9 +118,12 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   void _initializeControllers() {
-    _controllers['firstName'] = TextEditingController(text: userData?['firstName']);
-    _controllers['middleName'] = TextEditingController(text: userData?['middleName'] ?? '');
-    _controllers['lastName'] = TextEditingController(text: userData?['lastName']);
+    _controllers['firstName'] =
+        TextEditingController(text: userData?['firstName']);
+    _controllers['middleName'] =
+        TextEditingController(text: userData?['middleName'] ?? '');
+    _controllers['lastName'] =
+        TextEditingController(text: userData?['lastName']);
     _controllers['age'] = TextEditingController(text: userData?['age']);
     _controllers['address'] = TextEditingController(text: userData?['address']);
     selectedFarmerType = userData?['farmerType'];
@@ -127,7 +133,8 @@ class _ProfilePageState extends State<ProfilePage> {
     await _requestAllPermissions();
 
     try {
-      final pickedFile = await _imagePicker.pickImage(source: ImageSource.gallery);
+      final pickedFile =
+          await _imagePicker.pickImage(source: ImageSource.gallery);
       if (pickedFile != null) {
         setState(() {
           _profileImage = File(pickedFile.path);
@@ -194,7 +201,10 @@ class _ProfilePageState extends State<ProfilePage> {
         }
       }
 
-      await FirebaseFirestore.instance.collection('users').doc(user.uid).update(updatedData);
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .update(updatedData);
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Profile updated successfully.')),
@@ -213,7 +223,8 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<void> _signOut() async {
     try {
       await FirebaseAuth.instance.signOut();
-      Navigator.pushReplacementNamed(context, '/login'); // Navigate to login screen
+      Navigator.pushReplacementNamed(
+          context, '/login'); // Navigate to login screen
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error signing out: $e')),
@@ -222,28 +233,6 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(CupertinoIcons.back),
-          onPressed: () {
-            Navigator.pop(context);
-          },
-        ),
-        title: const Text('Profile'),
-        backgroundColor: Colors.green,
-      ),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _isUserLoggedIn
-              ? userData == null
-                  ? const Center(child: Text('No profile data available.'))
-                  : _buildProfileForm()
-              : _buildLoginPrompt(),
-    );
-  }
-
   Widget _buildProfileForm() {
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -263,8 +252,9 @@ class _ProfilePageState extends State<ProfilePage> {
                 backgroundImage: _profileImage != null
                     ? FileImage(_profileImage!)
                     : (userData?['profileImageUrl'] != null
-                        ? NetworkImage(userData!['profileImageUrl'])
-                        : const AssetImage('assets/images/defaultprofile.png'))
+                            ? NetworkImage(userData!['profileImageUrl'])
+                            : const AssetImage(
+                                'assets/images/defaultprofile.png'))
                         as ImageProvider,
                 child: _profileImage == null
                     ? const Icon(CupertinoIcons.camera, size: 40)
@@ -284,35 +274,105 @@ class _ProfilePageState extends State<ProfilePage> {
                 ],
               ),
             ),
-            ElevatedButton.icon(
-              onPressed: _saveChanges,
-              icon: const Icon(CupertinoIcons.check_mark),
-              label: const Text('Save Changes', style: TextStyle(fontSize: 15)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 30),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                ElevatedButton.icon(
+                  onPressed: _saveChanges,
+                  icon: const Icon(CupertinoIcons.check_mark, size: 16),
+                  label: const Text('Save Changes',
+                      style: TextStyle(fontSize: 12)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 10, horizontal: 20),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
                 ),
-              ),
-            ),
-            const SizedBox(height: 10),
-            ElevatedButton.icon(
-              onPressed: _signOut,
-              icon: const Icon(CupertinoIcons.arrow_right_circle_fill),
-              label: const Text('Sign Out', style: TextStyle(fontSize: 15)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 30),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+                ElevatedButton.icon(
+                  onPressed: _signOut,
+                  icon: const Icon(CupertinoIcons.arrow_right_circle_fill,
+                      size: 16),
+                  label: const Text('Sign Out', style: TextStyle(fontSize: 12)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 10, horizontal: 20),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
           ],
         ),
       ),
     );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.pop(context); // Navigate back to the previous screen
+          },
+        ),
+        title: const Text('Profile'),
+        backgroundColor: Colors.green,
+        actions: [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.settings),
+            onSelected: (value) {
+              if (value == 'change_email_password') {
+                Navigator.pushNamed(context, '/changePassword');
+              } else if (value == 'delete_account') {
+                _deleteAccount();
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'change_email_password',
+                child: Text('Change Email and Password'),
+              ),
+              const PopupMenuItem(
+                value: 'delete_account',
+                child: Text('Delete Account'),
+              ),
+            ],
+          ),
+        ],
+      ),
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _isUserLoggedIn
+              ? userData == null
+                  ? const Center(child: Text('No profile data available.'))
+                  : _buildProfileForm()
+              : _buildLoginPrompt(),
+    );
+  }
+
+  Future<void> _deleteAccount() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        await user.delete();
+        Navigator.pushReplacementNamed(context, '/login');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Account deleted successfully.')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error deleting account: $e')),
+      );
+    }
   }
 
   Widget _buildLoginPrompt() {
