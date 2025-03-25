@@ -25,6 +25,7 @@ import 'package:agritek/Login/login.dart';
 import 'Login/change_password.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
+import 'package:agritek/CropFarming/add_info.dart';
 
 // Your custom color class
 class AppColor {
@@ -62,6 +63,7 @@ class MyApp extends StatelessWidget {
         '/homepage': (context) => const HomePage(),
         '/home': (context) => const FarmGuidePage(),
         '/cropfarming': (context) => const CropFarmingScreen(),
+        '/addinfo': (context) => const AddInformationForm(),
         '/forestry': (context) => const ForestryScreen(),
         '/aquaculture': (context) => const AquacultureScreen(),
         '/livestock': (context) => const LivestockScreen(),

@@ -2,7 +2,7 @@ name: agritek
 description: "A new Flutter project."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
-publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+publish_to: "none" # Remove this line if you wish to publish to pub.dev
 
 # The following defines the version and build number for your application.
 # A version number is three numbers separated by dots, like 1.2.43
@@ -39,21 +39,20 @@ dependencies:
   geolocator: ^9.0.2
   location: ^7.0.1
   geocoding: ^2.0.5
-  intl: ^0.20.1
+  intl: ^0.19.0
   youtube_player_flutter: ^9.1.1
   cloud_firestore: ^5.4.4
   shared_preferences: ^2.3.5
-  table_calendar: ^3.2.0
+  table_calendar: ^3.0.0
   timeago: ^3.2.2
   permission_handler: ^11.3.1
   flutter_local_notifications: ^18.0.1
   timeline_tile: ^2.0.0
-  
+  flutter_quill: ^11.1.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
@@ -67,7 +66,6 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
-
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.

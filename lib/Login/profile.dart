@@ -232,7 +232,6 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  @override
   Widget _buildProfileForm() {
     return Padding(
       padding: const EdgeInsets.all(16.0),
