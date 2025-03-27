@@ -16,8 +16,8 @@ class _AddInformationFormState extends State<AddInformationForm> {
   String? _title;
   String? _selectedBranch;
   String? _selectedCropCategory;
-  List<Map<String, dynamic>> _sections = []; // Updated to include image field
-  List<File> _selectedImages = [];
+  List<Map<String, dynamic>> _sections = [];
+  File? _titleImageFile; // File for the title image
 
   final List<String> _branches = ['Crop Farming', 'Livestock', 'Aquaculture'];
   final Map<String, List<String>> _cropCategories = {
@@ -29,6 +29,16 @@ class _AddInformationFormState extends State<AddInformationForm> {
       'Highland Vegetables',
       'Lowland Vegetables'
     ],
+  };
+
+  // Map to associate categories with images
+  final Map<String, String> _categoryImages = {
+    'Fruits': 'assets/images/fruits.jpg',
+    'Grains': 'assets/images/grains.jpg',
+    'Spices': 'assets/images/spices.jpg',
+    'Root Crops': 'assets/images/root_crops.jpg',
+    'Highland Vegetables': 'assets/images/highland_vegetables.png',
+    'Lowland Vegetables': 'assets/images/lowland_vegetables.jpg',
   };
 
   Future<String?> uploadImage(File imageFile) async {
@@ -46,6 +56,12 @@ class _AddInformationFormState extends State<AddInformationForm> {
 
   Future<void> _saveToFirebase(BuildContext context) async {
     try {
+      // Upload title image
+      String? titleImageUrl;
+      if (_titleImageFile != null) {
+        titleImageUrl = await uploadImage(_titleImageFile!);
+      }
+
       // Upload images for each section and update the sections list
       for (var section in _sections) {
         if (section['imageFile'] != null) {
@@ -58,6 +74,7 @@ class _AddInformationFormState extends State<AddInformationForm> {
       // Save data to Firestore
       await FirebaseFirestore.instance.collection('agriculture_guides').add({
         'title': _title,
+        'titleImage': titleImageUrl,
         'category': _selectedBranch,
         'cropCategory': _selectedCropCategory,
         'sections': _sections,
@@ -72,13 +89,23 @@ class _AddInformationFormState extends State<AddInformationForm> {
       setState(() {
         _formKey.currentState!.reset();
         _sections = [];
-        _selectedImages = [];
+        _titleImageFile = null;
         _selectedCropCategory = null;
       });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to submit form: $e')),
       );
+    }
+  }
+
+  Future<void> _pickTitleImage() async {
+    final pickedFile =
+        await ImagePicker().pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      setState(() {
+        _titleImageFile = File(pickedFile.path);
+      });
     }
   }
 
@@ -127,6 +154,21 @@ class _AddInformationFormState extends State<AddInformationForm> {
                     return null;
                   },
                 ),
+                const SizedBox(height: 8),
+                ElevatedButton(
+                  onPressed: _pickTitleImage,
+                  child: const Text('Pick Title Image'),
+                ),
+                if (_titleImageFile != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8.0),
+                    child: Image.file(
+                      _titleImageFile!,
+                      height: 100,
+                      width: 100,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
                   decoration: const InputDecoration(
@@ -178,6 +220,17 @@ class _AddInformationFormState extends State<AddInformationForm> {
                       }
                       return null;
                     },
+                  ),
+                if (_selectedCropCategory != null &&
+                    _categoryImages.containsKey(_selectedCropCategory!))
+                  Padding(
+                    padding: const EdgeInsets.only(top: 16.0),
+                    child: Image.asset(
+                      _categoryImages[_selectedCropCategory!]!,
+                      height: 150,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                    ),
                   ),
                 const SizedBox(height: 16),
                 ElevatedButton(
