@@ -36,7 +36,8 @@ class CustomSearchDelegate extends SearchDelegate {
   @override
   Widget buildResults(BuildContext context) {
     final results = searchItems
-        .where((item) => item['title'].toLowerCase().contains(query.toLowerCase()))
+        .where(
+            (item) => item['title'].toLowerCase().contains(query.toLowerCase()))
         .toList();
 
     return ListView.builder(
@@ -53,7 +54,8 @@ class CustomSearchDelegate extends SearchDelegate {
   @override
   Widget buildSuggestions(BuildContext context) {
     final suggestions = searchItems
-        .where((item) => item['title'].toLowerCase().contains(query.toLowerCase()))
+        .where(
+            (item) => item['title'].toLowerCase().contains(query.toLowerCase()))
         .toList();
 
     return ListView.builder(
@@ -86,7 +88,6 @@ class FarmGuidePage extends StatefulWidget {
 }
 
 class FarmGuidePageState extends State<FarmGuidePage> {
-
   void _onItemTapped(int index) {
     switch (index) {
       case 0:
@@ -112,7 +113,7 @@ class FarmGuidePageState extends State<FarmGuidePage> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
-            Navigator.pop(context);  // Go back when back button is pressed
+            Navigator.pop(context); // Go back when back button is pressed
           },
         ),
         actions: [
@@ -149,28 +150,24 @@ class FarmGuidePageState extends State<FarmGuidePage> {
                     title: 'Crop Farming',
                     subtitle: 'Production of Crops',
                     imageUrl: 'assets/images/cropfarming.jpg',
-                    onTitlePressed: () => Navigator.pushNamed(context, '/cropfarming'),
+                    onTitlePressed: () =>
+                        Navigator.pushNamed(context, '/cropfarming'),
                     screenWidth: screenWidth,
                   ),
                   SectorCard(
-                    title: 'Forestry',
-                    subtitle: 'Growing of Trees',
-                    imageUrl: 'assets/images/forestry.jpg',
-                    onTitlePressed: () => Navigator.pushNamed(context, '/forestry'),
-                    screenWidth: screenWidth,
-                  ),
-                  SectorCard(
-                    title: 'Fisheries and Aquaculture',
-                    subtitle: 'Cultivating Aquatic Resources',
-                    imageUrl: 'assets/images/fisheries.jpg',
-                    onTitlePressed: () => Navigator.pushNamed(context, '/aquaculture'),
+                    title: 'Aquaculture',
+                    subtitle: 'Fisheries and Aquaculture',
+                    imageUrl: 'assets/images/aquaculture.jpg',
+                    onTitlePressed: () =>
+                        Navigator.pushNamed(context, '/aquaculture'),
                     screenWidth: screenWidth,
                   ),
                   SectorCard(
                     title: 'Livestock',
                     subtitle: 'Raising of Domesticated Animals',
                     imageUrl: 'assets/images/livestock.jpeg',
-                    onTitlePressed: () => Navigator.pushNamed(context, '/livestock'),
+                    onTitlePressed: () =>
+                        Navigator.pushNamed(context, '/livestock'),
                     screenWidth: screenWidth,
                   ),
                 ],
@@ -212,7 +209,8 @@ class SectorCard extends StatelessWidget {
           AspectRatio(
             aspectRatio: 16 / 9,
             child: ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(8.0)),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(8.0)),
               child: Image.asset(
                 imageUrl,
                 width: double.infinity,

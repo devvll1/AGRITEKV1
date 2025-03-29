@@ -27,8 +27,10 @@ class _ForumsPageState extends State<ForumsPage> {
     }
 
     try {
-      final userDoc =
-          await FirebaseFirestore.instance.collection('users').doc(userId).get();
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .get();
       if (userDoc.exists) {
         final data = userDoc.data();
         final firstName = data?['firstName'] ?? '';
@@ -46,8 +48,10 @@ class _ForumsPageState extends State<ForumsPage> {
     if (userId == null) return '';
 
     try {
-      final userDoc =
-          await FirebaseFirestore.instance.collection('users').doc(userId).get();
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .get();
       if (userDoc.exists) {
         final data = userDoc.data();
         final profileImageUrl = data?['profileImageUrl'] ?? '';
@@ -58,7 +62,8 @@ class _ForumsPageState extends State<ForumsPage> {
     return '';
   }
 
-  Future<void> _togglePostLike(String postId, List<dynamic> currentLikes) async {
+  Future<void> _togglePostLike(
+      String postId, List<dynamic> currentLikes) async {
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('You must be logged in to like posts.')),
@@ -192,7 +197,8 @@ class _ForumsPageState extends State<ForumsPage> {
                                         fontSize: 12,
                                         color: Colors.grey),
                                   ),
-                                Divider(color: Colors.grey.shade400, thickness: 1),
+                                Divider(
+                                    color: Colors.grey.shade400, thickness: 1),
                                 Text(
                                   postData['title'] ?? 'No Title',
                                   style: const TextStyle(
@@ -202,13 +208,13 @@ class _ForumsPageState extends State<ForumsPage> {
                                 ),
                                 SizedBox(height: 4),
                                 Text(
-                                  postData['content'] ??
-                                      'No Content Available',
+                                  postData['content'] ?? 'No Content Available',
                                   style: const TextStyle(fontSize: 14),
                                   maxLines: 12,
                                   overflow: TextOverflow.ellipsis,
                                 ),
-                                Divider(color: Colors.grey.shade400, thickness: 1),
+                                Divider(
+                                    color: Colors.grey.shade400, thickness: 1),
                                 Row(
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
@@ -225,9 +231,8 @@ class _ForumsPageState extends State<ForumsPage> {
                                                 ? CupertinoColors.activeBlue
                                                 : CupertinoColors.inactiveGray,
                                           ),
-                                          onPressed: () =>
-                                              _togglePostLike(
-                                                  post.id, postLikes),
+                                          onPressed: () => _togglePostLike(
+                                              post.id, postLikes),
                                         ),
                                         Text('${postLikes.length} Likes'),
                                       ],
@@ -252,8 +257,8 @@ class _ForumsPageState extends State<ForumsPage> {
 
                                             return Text(
                                               '$commentCount Comments',
-                                              style: const TextStyle(
-                                                  fontSize: 13),
+                                              style:
+                                                  const TextStyle(fontSize: 13),
                                             );
                                           },
                                         ),
@@ -277,8 +282,7 @@ class _ForumsPageState extends State<ForumsPage> {
       floatingActionButton: user == null
           ? null
           : CupertinoButton(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               color: CupertinoColors.activeBlue,
               borderRadius: BorderRadius.circular(30),
               child: Row(

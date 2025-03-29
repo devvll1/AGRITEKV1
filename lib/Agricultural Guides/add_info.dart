@@ -20,6 +20,12 @@ class _AddInformationFormState extends State<AddInformationForm> {
   File? _titleImageFile; // File for the title image
 
   final List<String> _branches = ['Crop Farming', 'Livestock', 'Aquaculture'];
+  final Map<String, String> _branchImages = {
+    'Crop Farming': 'assets/images/cropfarming.jpg',
+    'Livestock': 'assets/images/livestock.jpeg',
+    'Aquaculture': 'assets/images/aquaculture.jpg',
+  };
+
   final Map<String, List<String>> _cropCategories = {
     'Crop Farming': [
       'Fruits',
@@ -31,18 +37,18 @@ class _AddInformationFormState extends State<AddInformationForm> {
     ],
   };
 
-  // Map to associate categories with images
   final Map<String, String> _categoryImages = {
     'Fruits': 'assets/images/fruits.jpg',
     'Grains': 'assets/images/grains.jpg',
     'Spices': 'assets/images/spices.jpg',
     'Root Crops': 'assets/images/root_crops.jpg',
     'Highland Vegetables': 'assets/images/highland_vegetables.png',
-    'Lowland Vegetables': 'assets/images/lowland_vegetables.jpg',
+    'Lowland Vegetables': 'assets/images/lowland_vegetables.png',
   };
 
-  Future<String?> uploadImage(File imageFile) async {
+  Future<String?> uploadImage(String localPath) async {
     try {
+      File imageFile = File(localPath);
       String fileName = DateTime.now().millisecondsSinceEpoch.toString();
       Reference ref =
           FirebaseStorage.instance.ref().child("images/$fileName.jpg");
@@ -59,15 +65,36 @@ class _AddInformationFormState extends State<AddInformationForm> {
       // Upload title image
       String? titleImageUrl;
       if (_titleImageFile != null) {
-        titleImageUrl = await uploadImage(_titleImageFile!);
+        titleImageUrl = await uploadImage(_titleImageFile!.path);
+      }
+
+      // Upload branch image
+      String? branchImageUrl;
+      if (_selectedBranch != null &&
+          _branchImages.containsKey(_selectedBranch!)) {
+        branchImageUrl = await uploadImage(_branchImages[_selectedBranch!]!);
+      }
+
+      // Upload crop category image
+      String? cropCategoryImageUrl;
+      if (_selectedCropCategory != null &&
+          _categoryImages.containsKey(_selectedCropCategory!)) {
+        cropCategoryImageUrl =
+            await uploadImage(_categoryImages[_selectedCropCategory!]!);
       }
 
       // Upload images for each section and update the sections list
       for (var section in _sections) {
-        if (section['imageFile'] != null) {
-          String? imageUrl = await uploadImage(section['imageFile']);
-          section['image'] = imageUrl;
-          section.remove('imageFile'); // Remove the local file reference
+        if (section['imageFiles'] != null) {
+          List<String> imageUrls = [];
+          for (var imageFile in section['imageFiles']) {
+            String? imageUrl = await uploadImage(imageFile.path);
+            if (imageUrl != null) {
+              imageUrls.add(imageUrl);
+            }
+          }
+          section['images'] = imageUrls;
+          section.remove('imageFiles'); // Remove the local file references
         }
       }
 
@@ -75,6 +102,8 @@ class _AddInformationFormState extends State<AddInformationForm> {
       await FirebaseFirestore.instance.collection('agriculture_guides').add({
         'title': _title,
         'titleImage': titleImageUrl,
+        'branchImage': branchImageUrl,
+        'cropCategoryImage': cropCategoryImageUrl,
         'category': _selectedBranch,
         'cropCategory': _selectedCropCategory,
         'sections': _sections,
@@ -109,19 +138,20 @@ class _AddInformationFormState extends State<AddInformationForm> {
     }
   }
 
-  Future<void> _pickSectionImage(int index) async {
-    final pickedFile =
-        await ImagePicker().pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
+  Future<void> _pickSectionImages(int index) async {
+    final pickedFiles = await ImagePicker().pickMultiImage();
+    if (pickedFiles != null) {
       setState(() {
-        _sections[index]['imageFile'] = File(pickedFile.path);
+        _sections[index]['imageFiles'] ??= [];
+        _sections[index]['imageFiles']
+            .addAll(pickedFiles.map((file) => File(file.path)));
       });
     }
   }
 
   void _addSection() {
     setState(() {
-      _sections.add({'heading': '', 'content': '', 'imageFile': null});
+      _sections.add({'heading': '', 'content': '', 'imageFiles': []});
     });
   }
 
@@ -195,6 +225,17 @@ class _AddInformationFormState extends State<AddInformationForm> {
                     return null;
                   },
                 ),
+                if (_selectedBranch != null &&
+                    _branchImages.containsKey(_selectedBranch!))
+                  Padding(
+                    padding: const EdgeInsets.only(top: 16.0),
+                    child: Image.asset(
+                      _branchImages[_selectedBranch!]!,
+                      height: 150,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
                 const SizedBox(height: 16),
                 if (_selectedBranch == 'Crop Farming')
                   DropdownButtonFormField<String>(
@@ -277,17 +318,23 @@ class _AddInformationFormState extends State<AddInformationForm> {
                       ),
                       const SizedBox(height: 8),
                       ElevatedButton(
-                        onPressed: () => _pickSectionImage(index),
-                        child: const Text('Pick Section Image'),
+                        onPressed: () => _pickSectionImages(index),
+                        child: const Text('Pick Section Images'),
                       ),
-                      if (section['imageFile'] != null)
+                      if (section['imageFiles'] != null)
                         Padding(
                           padding: const EdgeInsets.only(top: 8.0),
-                          child: Image.file(
-                            section['imageFile'],
-                            height: 100,
-                            width: 100,
-                            fit: BoxFit.cover,
+                          child: Wrap(
+                            spacing: 8.0,
+                            runSpacing: 8.0,
+                            children: section['imageFiles']
+                                .map<Widget>((file) => Image.file(
+                                      file,
+                                      height: 100,
+                                      width: 100,
+                                      fit: BoxFit.cover,
+                                    ))
+                                .toList(),
                           ),
                         ),
                       const SizedBox(height: 16),
