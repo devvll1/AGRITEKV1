@@ -18,6 +18,7 @@ class _AddInformationFormState extends State<AddInformationForm> {
   String? _selectedCropCategory;
   List<Map<String, dynamic>> _sections = [];
   File? _titleImageFile; // File for the title image
+  bool _isSubmitting = false; // Track submission state
 
   final List<String> _branches = ['Crop Farming', 'Livestock', 'Aquaculture'];
   final Map<String, String> _branchImages = {
@@ -61,6 +62,10 @@ class _AddInformationFormState extends State<AddInformationForm> {
   }
 
   Future<void> _saveToFirebase(BuildContext context) async {
+    setState(() {
+      _isSubmitting = true; // Start loading
+    });
+
     try {
       // Upload title image
       String? titleImageUrl;
@@ -96,6 +101,9 @@ class _AddInformationFormState extends State<AddInformationForm> {
           section['images'] = imageUrls;
           section.remove('imageFiles'); // Remove the local file references
         }
+        // Ensure null-safe handling of section fields
+        section['heading'] = section['heading'] ?? '';
+        section['content'] = section['content'] ?? '';
       }
 
       // Save data to Firestore
@@ -125,6 +133,10 @@ class _AddInformationFormState extends State<AddInformationForm> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to submit form: $e')),
       );
+    } finally {
+      setState(() {
+        _isSubmitting = false; // Stop loading
+      });
     }
   }
 
@@ -152,6 +164,12 @@ class _AddInformationFormState extends State<AddInformationForm> {
   void _addSection() {
     setState(() {
       _sections.add({'heading': '', 'content': '', 'imageFiles': []});
+    });
+  }
+
+  void _removeSection(int index) {
+    setState(() {
+      _sections.removeAt(index);
     });
   }
 
@@ -274,11 +292,6 @@ class _AddInformationFormState extends State<AddInformationForm> {
                     ),
                   ),
                 const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: _addSection,
-                  child: const Text('Add Section'),
-                ),
-                const SizedBox(height: 16),
                 ..._sections.asMap().entries.map((entry) {
                   int index = entry.key;
                   Map<String, dynamic> section = entry.value;
@@ -293,12 +306,6 @@ class _AddInformationFormState extends State<AddInformationForm> {
                         onChanged: (value) {
                           section['heading'] = value;
                         },
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter a heading for section ${index + 1}';
-                          }
-                          return null;
-                        },
                       ),
                       const SizedBox(height: 8),
                       TextFormField(
@@ -306,14 +313,10 @@ class _AddInformationFormState extends State<AddInformationForm> {
                           labelText: 'Section Content ${index + 1}',
                           border: const OutlineInputBorder(),
                         ),
+                        maxLines: 5, // Allow multi-line input
+                        minLines: 1,
                         onChanged: (value) {
                           section['content'] = value;
-                        },
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter content for section ${index + 1}';
-                          }
-                          return null;
                         },
                       ),
                       const SizedBox(height: 8),
@@ -337,18 +340,42 @@ class _AddInformationFormState extends State<AddInformationForm> {
                                 .toList(),
                           ),
                         ),
+                      const SizedBox(height: 8),
+                      ElevatedButton(
+                        onPressed: () => _removeSection(index),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                        ),
+                        child: const Text('Remove Section'),
+                      ),
                       const SizedBox(height: 16),
                     ],
                   );
                 }).toList(),
                 ElevatedButton(
-                  onPressed: () {
-                    if (_formKey.currentState!.validate()) {
-                      _saveToFirebase(context);
-                    }
-                  },
-                  child: const Text('Submit'),
+                  onPressed: _addSection,
+                  child: const Text('Add Section'),
                 ),
+                const SizedBox(height: 16),
+                if (_isSubmitting)
+                  Center(
+                    child: Column(
+                      children: const [
+                        CircularProgressIndicator(),
+                        SizedBox(height: 8),
+                        Text('Submitting, please wait...'),
+                      ],
+                    ),
+                  )
+                else
+                  ElevatedButton(
+                    onPressed: () {
+                      if (_formKey.currentState!.validate()) {
+                        _saveToFirebase(context);
+                      }
+                    },
+                    child: const Text('Submit'),
+                  ),
               ],
             ),
           ),

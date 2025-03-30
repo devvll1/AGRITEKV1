@@ -15,7 +15,7 @@ class ViewGuides extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Agriculture Categories'),
+        title: const Text('Branch of Agriculture'),
       ),
       body: ListView.builder(
         itemCount: agricultureCategories.length,
@@ -101,7 +101,7 @@ class CropFarmingViewer extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Crop Farming Categories'),
+        title: const Text('Crop Farming'),
       ),
       body: ListView.builder(
         itemCount: cropCategories.length,
@@ -158,7 +158,7 @@ class CropFarmingViewer extends StatelessWidget {
   }
 }
 
-class TitleViewer extends StatelessWidget {
+class TitleViewer extends StatefulWidget {
   final String category;
   final String? cropCategory;
 
@@ -166,16 +166,47 @@ class TitleViewer extends StatelessWidget {
       : super(key: key);
 
   @override
+  _TitleViewerState createState() => _TitleViewerState();
+}
+
+class _TitleViewerState extends State<TitleViewer> {
+  String searchQuery = '';
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(cropCategory ?? category),
+        title: Text(widget.cropCategory ?? widget.category),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(56.0),
+          child: Padding(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            child: TextField(
+              onChanged: (value) {
+                setState(() {
+                  searchQuery = value.toLowerCase();
+                });
+              },
+              decoration: InputDecoration(
+                hintText: 'Search titles...',
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8.0),
+                  borderSide: BorderSide.none,
+                ),
+                filled: true,
+                fillColor: Colors.white,
+              ),
+            ),
+          ),
+        ),
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('agriculture_guides')
-            .where('category', isEqualTo: category)
-            .where('cropCategory', isEqualTo: cropCategory)
+            .where('category', isEqualTo: widget.category)
+            .where('cropCategory', isEqualTo: widget.cropCategory)
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -185,14 +216,20 @@ class TitleViewer extends StatelessWidget {
             return const Center(child: Text('No data available.'));
           }
 
-          final docs = snapshot.data!.docs;
+          final docs = snapshot.data!.docs.where((doc) {
+            final title = doc['title']?.toString().toLowerCase() ?? '';
+            return title.contains(searchQuery);
+          }).toList();
+
+          if (docs.isEmpty) {
+            return const Center(child: Text('No results found.'));
+          }
 
           return ListView.builder(
             itemCount: docs.length,
             itemBuilder: (context, index) {
               final doc = docs[index];
-              final imageUrl = doc['titleImage'] ??
-                  ''; // Assuming `titleImage` is stored in Firestore
+              final imageUrl = doc['titleImage'] ?? '';
               return GestureDetector(
                 onTap: () {
                   Navigator.push(
@@ -203,7 +240,7 @@ class TitleViewer extends StatelessWidget {
                   );
                 },
                 child: Container(
-                  height: 150, // Enlarged height for each item
+                  height: 150,
                   margin:
                       const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
                   decoration: BoxDecoration(
@@ -218,8 +255,7 @@ class TitleViewer extends StatelessWidget {
                       Container(
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(16),
-                          color: Colors.black.withOpacity(
-                              0.4), // Dark overlay for text visibility
+                          color: Colors.black.withOpacity(0.4),
                         ),
                       ),
                       Center(
