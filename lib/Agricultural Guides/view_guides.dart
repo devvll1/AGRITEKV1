@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class ViewGuides extends StatelessWidget { // Renamed from ViewCrops to ViewGuides
+class ViewGuides extends StatelessWidget {
+  // Renamed from ViewCrops to ViewGuides
   const ViewGuides({Key? key}) : super(key: key);
 
   @override
