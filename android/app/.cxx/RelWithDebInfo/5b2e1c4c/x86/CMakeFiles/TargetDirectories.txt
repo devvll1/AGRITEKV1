@@ -1,0 +1,2 @@
+C:/flutter/projects/agritekv1/android/app/.cxx/RelWithDebInfo/5b2e1c4c/x86/CMakeFiles/edit_cache.dir
+C:/flutter/projects/agritekv1/android/app/.cxx/RelWithDebInfo/5b2e1c4c/x86/CMakeFiles/rebuild_cache.dir

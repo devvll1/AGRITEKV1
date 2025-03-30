@@ -1,78 +1,61 @@
 plugins {
     id "com.android.application"
-    // START: FlutterFire Configuration
-    id 'com.google.gms.google-services'
-    // END: FlutterFire Configuration
+    id 'com.google.gms.google-services'  // Firebase
     id "kotlin-android"
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id "dev.flutter.flutter-gradle-plugin"
-
 }
 
-    def localProperties = new Properties()
-    def localPropertiesFile = rootProject.file("local.properties")
-    if (localPropertiesFile.exists()) {
-        localPropertiesFile.withReader("UTF-8") { reader ->
-            localProperties.load(reader)
-        }
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withReader("UTF-8") { reader ->
+        localProperties.load(reader)
+    }
+}
+
+// Fix: Retrieve values correctly from local.properties
+def flutterCompileSdkVersion = localProperties.getProperty("flutter.compileSdkVersion", "34").toInteger()
+def flutterTargetSdkVersion = localProperties.getProperty("flutter.targetSdkVersion", "34").toInteger()
+def flutterMinSdkVersion = localProperties.getProperty("flutter.minSdkVersion", "23").toInteger()
+def flutterVersionCode = localProperties.getProperty("flutter.versionCode", "1").toInteger()
+def flutterVersionName = localProperties.getProperty("flutter.versionName", "1.0")
+
+android {
+    namespace "com.example.agritek"
+    compileSdk flutterCompileSdkVersion
+    ndkVersion localProperties.getProperty("flutter.ndkVersion", "23.1.7779620")
+
+    defaultConfig {
+        applicationId "com.agritek.app"
+        minSdkVersion flutterMinSdkVersion
+        targetSdkVersion flutterTargetSdkVersion
+        versionCode flutterVersionCode
+        versionName flutterVersionName
     }
 
-    def flutterVersionCode = localProperties.getProperty("flutter.versionCode")
-    if (flutterVersionCode == null) {
-        flutterVersionCode = "1"
-    }
-
-    def flutterVersionName = localProperties.getProperty("flutter.versionName")
-    if (flutterVersionName == null) {
-        flutterVersionName = "1.0"
-    }
-
-    android {
-        namespace = "com.example.agritek"
-        compileSdk = flutter.compileSdkVersion
-        ndkVersion = flutter.ndkVersion
-
-        compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17
-    }
-
-
-    defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.agritek.app"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdkVersion 23
-        targetSdk = flutter.targetSdkVersion
-        versionCode = flutter.versionCode
-        versionName = flutter.versionName
+        jvmTarget = "17"
     }
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.debug
+            signingConfig signingConfigs.debug
         }
     }
 }
 
 flutter {
-    source = "../.."
+    source "../.."
 }
 
-dependencies { 
-    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version" // Kotlin Standard Library 
-    implementation 'androidx.core:core-ktx:1.6.0' // AndroidX Core KTX 
-    implementation 'androidx.appcompat:appcompat:1.3.1' // AndroidX AppCompat 
-    implementation 'com.google.android.material:material:1.4.0' // Material Components 
-    // implementation 'androidx.constraintlayout:constraintlayout:2.1.0' // ConstraintLayout 
-    // testImplementation 'junit:junit:4.13.2' // JUnit for Testing 
-    // androidTestImplementation 'androidx.test.ext:junit:1.1.3' // AndroidX Test 
-    // androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0' // Espresso for UI Testing 
+dependencies {
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:1.7.10"  // Ensure Kotlin version is valid
+    implementation 'androidx.core:core-ktx:1.6.0'
+    implementation 'androidx.appcompat:appcompat:1.3.1'
+    implementation 'com.google.android.material:material:1.4.0'
 }
