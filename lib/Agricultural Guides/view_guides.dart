@@ -269,40 +269,120 @@ class InfoViewer extends StatelessWidget {
           }
 
           final data = snapshot.data!.data() as Map<String, dynamic>;
-          final sections = data['sections'] as List<dynamic>;
+          final cropCategory = data['cropCategory'] ?? 'No Crop Category';
+          final cropCategoryImage = data['cropCategoryImage'];
+          final title = data['title'] ?? 'No Title';
+          final titleImage = data['titleImage'];
+          final sections = data['sections'] as List<dynamic>? ?? [];
 
           return ListView(
             padding: const EdgeInsets.all(16.0),
             children: [
-              Text(
-                data['title'] ?? '',
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
+              // Placeholder with Title, Category, and Title Image
+              Container(
+                padding: const EdgeInsets.all(16.0),
+                decoration: BoxDecoration(
+                  color: Colors.green
+                      .withOpacity(0.75), // Green background with 75% opacity
+                  borderRadius: BorderRadius.circular(8.0),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            title,
+                            style: const TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            cropCategory,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.normal,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (titleImage != null)
+                      GestureDetector(
+                        onTap: () {
+                          _showFullScreenImage(context, titleImage);
+                        },
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8.0),
+                          child: Image.network(
+                            titleImage,
+                            width: 100,
+                            height: 100,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
               const SizedBox(height: 16),
+
+              // Display Crop Category Image
+              if (cropCategoryImage != null)
+                GestureDetector(
+                  onTap: () {
+                    _showFullScreenImage(context, cropCategoryImage);
+                  },
+                  child: Image.network(
+                    cropCategoryImage,
+                    width: double.infinity,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              const SizedBox(height: 16),
+
+              // Display Sections
               ...sections.map((section) {
+                final heading = section['heading'];
+                final content = section['content'];
+                final images = section['images'] as List<dynamic>? ?? [];
+
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      section['heading'] ?? '',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                    if (heading != null)
+                      Text(
+                        heading,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(section['content'] ?? ''),
-                    const SizedBox(height: 8),
-                    if (section['image'] != null)
-                      Image.network(
-                        section['image'],
-                        height: 200,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                      ),
+                    if (heading != null) const SizedBox(height: 8),
+                    if (content != null) Text(content),
+                    if (content != null) const SizedBox(height: 8),
+                    ...images.map((image) {
+                      return GestureDetector(
+                        onTap: () {
+                          _showFullScreenImage(context, image);
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.only(bottom: 8.0),
+                          child: Image.network(
+                            image,
+                            width: double.infinity,
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                      );
+                    }).toList(),
                     const SizedBox(height: 16),
                   ],
                 );
@@ -310,6 +390,41 @@ class InfoViewer extends StatelessWidget {
             ],
           );
         },
+      ),
+    );
+  }
+
+  void _showFullScreenImage(BuildContext context, String imageUrl) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => FullScreenImageViewer(imageUrl: imageUrl),
+      ),
+    );
+  }
+}
+
+class FullScreenImageViewer extends StatelessWidget {
+  final String imageUrl;
+
+  const FullScreenImageViewer({Key? key, required this.imageUrl})
+      : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
+      body: Center(
+        child: InteractiveViewer(
+          child: Image.network(
+            imageUrl,
+            fit: BoxFit.contain,
+          ),
+        ),
       ),
     );
   }
