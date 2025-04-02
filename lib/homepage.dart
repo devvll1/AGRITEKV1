@@ -1,6 +1,7 @@
 import 'package:agritek/Agricultural%20Guides/add_info.dart';
 import 'package:agritek/Agricultural%20Guides/view_guides.dart';
-import 'package:agritek/Updates/market.dart';
+import 'package:agritek/Updates/Market%20Price/add_market_price.dart';
+import 'package:agritek/Updates/Market%20Price/view_market_price.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -8,7 +9,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:agritek/Forums/forumfeed.dart';
 import 'package:agritek/Login/profile.dart';
 import 'package:agritek/Track/calendar.dart';
-import 'package:agritek/Updates/weather.dart';
+import 'package:agritek/Updates/Weather/weather.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -412,8 +413,11 @@ class _HomePageState extends State<HomePage> {
                                 0.4, // Adjust width as needed
                             height:
                                 90, // Adjust height to make it a small rectangle
-                            child: _buildMenuButton("Updates", context,
-                                const MarketScreen(), CupertinoIcons.cart_fill),
+                            child: _buildMenuButton(
+                                "Updates",
+                                context,
+                                const ViewMarketPrice(),
+                                CupertinoIcons.cart_fill),
                           ),
                           Container(
                             width: MediaQuery.of(context).size.width *

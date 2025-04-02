@@ -337,7 +337,7 @@ class _ProfilePageState extends State<ProfilePage> {
             itemBuilder: (context) => [
               const PopupMenuItem(
                 value: 'change_email_password',
-                child: Text('Change Email and Password'),
+                child: Text('Change Password'),
               ),
               const PopupMenuItem(
                 value: 'delete_account',

@@ -1,8 +1,8 @@
 import 'package:agritek/Authentication/widget_tree.dart';
 import 'package:agritek/Login/profile.dart';
 import 'package:agritek/Login/profilesetup.dart';
-import 'package:agritek/Updates/weather.dart';
-import 'package:agritek/Updates/weekforecast.dart';
+import 'package:agritek/Updates/Weather/weather.dart';
+import 'package:agritek/Updates/Weather/weekforecast.dart';
 import 'package:agritek/homepage.dart';
 import 'package:flutter/material.dart';
 import 'package:agritek/farmguide.dart';
