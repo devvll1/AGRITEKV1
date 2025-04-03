@@ -1,6 +1,5 @@
 import 'package:agritek/Agricultural%20Guides/add_info.dart';
 import 'package:agritek/Agricultural%20Guides/view_guides.dart';
-import 'package:agritek/Updates/Market%20Price/add_market_price.dart';
 import 'package:agritek/Updates/Market%20Price/view_market_price.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -14,6 +13,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:intl/intl.dart';
+import 'package:flutter/services.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -279,8 +279,8 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return WillPopScope(
       onWillPop: () async {
-        bool shouldExit = await _showExitConfirmation(context);
-        return shouldExit;
+        return await _showExitConfirmation(
+            context); // Return the result of the confirmation dialog
       },
       child: CupertinoPageScaffold(
         navigationBar: CupertinoNavigationBar(
@@ -376,12 +376,12 @@ class _HomePageState extends State<HomePage> {
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 20), // Reduced padding
+                      horizontal: 15), // Reduced padding
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
                           Container(
                             width: MediaQuery.of(context).size.width *
@@ -404,9 +404,9 @@ class _HomePageState extends State<HomePage> {
                           ),
                         ],
                       ),
-                      SizedBox(height: 10), // Space between rows
+                      SizedBox(height: 20), // Space between rows
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
                           Container(
                             width: MediaQuery.of(context).size.width *
@@ -664,34 +664,41 @@ class _HomePageState extends State<HomePage> {
 }
 
 Future<bool> _showExitConfirmation(BuildContext context) async {
-  bool shouldExit = false;
-  await showCupertinoDialog(
-    context: context,
-    builder: (BuildContext context) {
-      return CupertinoAlertDialog(
-        title: const Text("Exit App", style: TextStyle(fontFamily: 'Poppins')),
-        content: const Text("Are you sure you want to exit the app?",
-            style: TextStyle(fontFamily: 'Poppins')),
-        actions: [
-          CupertinoDialogAction(
-            onPressed: () {
-              Navigator.of(context).pop(); // Close the dialog
-              shouldExit = false; // Do not exit the app
-            },
-            child:
-                const Text("Cancel", style: TextStyle(fontFamily: 'Poppins')),
-          ),
-          CupertinoDialogAction(
-            isDestructiveAction: true, // Highlights the destructive action
-            onPressed: () {
-              Navigator.of(context).pop(); // Close the dialog
-              shouldExit = true; // Allow exiting the app
-            },
-            child: const Text("Exit", style: TextStyle(fontFamily: 'Poppins')),
-          ),
-        ],
-      );
-    },
-  );
+  final shouldExit = await showCupertinoDialog<bool>(
+        context: context,
+        builder: (BuildContext context) {
+          return CupertinoAlertDialog(
+            title:
+                const Text("Exit App", style: TextStyle(fontFamily: 'Poppins')),
+            content: const Text("Are you sure you want to exit the app?",
+                style: TextStyle(fontFamily: 'Poppins')),
+            actions: [
+              CupertinoDialogAction(
+                onPressed: () {
+                  Navigator.of(context)
+                      .pop(false); // Return false (do not exit)
+                },
+                child: const Text("Cancel",
+                    style: TextStyle(fontFamily: 'Poppins')),
+              ),
+              CupertinoDialogAction(
+                isDestructiveAction: true, // Highlights the destructive action
+                onPressed: () {
+                  Navigator.of(context).pop(true); // Return true (exit the app)
+                },
+                child:
+                    const Text("Exit", style: TextStyle(fontFamily: 'Poppins')),
+              ),
+            ],
+          );
+        },
+      ) ??
+      false; // Default to false if the dialog is dismissed
+
+  if (shouldExit) {
+    // Exit the app
+    SystemNavigator.pop(); // Closes the app
+  }
+
   return shouldExit;
 }
