@@ -13,7 +13,8 @@ class ViewPostPage extends StatefulWidget {
   final String author;
   final String time;
   final List<dynamic> likes;
-  final String imageUrl;
+  final List<dynamic> imageUrls; // Added imageUrls
+  final String tags; // Added tags
 
   const ViewPostPage({
     super.key,
@@ -25,8 +26,8 @@ class ViewPostPage extends StatefulWidget {
     required this.author,
     required this.time,
     required this.likes,
-    required this.imageUrl,
-    required List comments,
+    required this.imageUrls,
+    required this.tags,
   });
 
   @override
@@ -179,8 +180,8 @@ class _ViewPostPageState extends State<ViewPostPage> {
             author: widget.author,
             time: widget.time,
             likes: widget.likes,
-            imageUrl: widget.imageUrl,
-            comments: [], // Provide existing comments if necessary
+            imageUrls: widget.imageUrls,
+            tags: widget.tags,
           ),
         ),
       );
@@ -635,6 +636,130 @@ class _ViewPostPageState extends State<ViewPostPage> {
       );
     } catch (e) {
       debugPrint('Error adding comment: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to add comment')),
+      );
+    }
+  }
+
+  void _showFullScreenImage(String imageUrl) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => Scaffold(
+          appBar: AppBar(),
+          body: Center(
+            child: Image.network(imageUrl),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImageGrid(List<dynamic> imageUrls) {
+    if (imageUrls.isEmpty) return const SizedBox.shrink();
+
+    final imageCount = imageUrls.length;
+
+    if (imageCount == 1) {
+      // Single full-width image
+      return GestureDetector(
+        onTap: () => _showFullScreenImage(imageUrls[0]),
+        child: Container(
+          width: double.infinity,
+          height: 200,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            image: DecorationImage(
+              image: NetworkImage(imageUrls[0]),
+              fit: BoxFit.cover,
+            ),
+          ),
+        ),
+      );
+    } else if (imageCount == 2) {
+      // Two images side by side
+      return Row(
+        children: imageUrls.take(2).map((imageUrl) {
+          return Expanded(
+            child: GestureDetector(
+              onTap: () => _showFullScreenImage(imageUrl),
+              child: Container(
+                height: 150,
+                margin: const EdgeInsets.only(right: 4),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  image: DecorationImage(
+                    image: NetworkImage(imageUrl),
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      );
+    } else {
+      // Three or more images
+      return Row(
+        children: List.generate(
+          3,
+          (index) {
+            if (index == 2 && imageCount > 3) {
+              // Show "+X" overlay for additional images
+              return Stack(
+                children: [
+                  GestureDetector(
+                    onTap: () => _showFullScreenImage(imageUrls[index]),
+                    child: Container(
+                      width: 100,
+                      height: 100,
+                      margin: const EdgeInsets.only(right: 4),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        image: DecorationImage(
+                          image: NetworkImage(imageUrls[index]),
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned.fill(
+                    child: Container(
+                      alignment: Alignment.center,
+                      color: Colors.black.withOpacity(0.5),
+                      child: Text(
+                        '+${imageCount - 3}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            } else {
+              return GestureDetector(
+                onTap: () => _showFullScreenImage(imageUrls[index]),
+                child: Container(
+                  width: 100,
+                  height: 100,
+                  margin: const EdgeInsets.only(right: 4),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    image: DecorationImage(
+                      image: NetworkImage(imageUrls[index]),
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+              );
+            }
+          },
+        ),
+      );
     }
   }
 

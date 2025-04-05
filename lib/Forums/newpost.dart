@@ -1,8 +1,7 @@
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 
@@ -16,63 +15,104 @@ class NewPostPage extends StatefulWidget {
 class _NewPostPageState extends State<NewPostPage> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _contentController = TextEditingController();
+  final TextEditingController _tagController = TextEditingController();
   final User? user = FirebaseAuth.instance.currentUser;
 
   String? _selectedCategory;
-  File? _selectedImage;
+  List<File> _selectedImages = [];
   bool _isSubmitting = false;
+  String? _profileImageUrl;
+  String? _userName;
 
   final List<String> _categories = [
     'Crop Farming',
     'Livestock',
-    'Aquafisheries'
+    'Aquaculture',
+    'Others',
   ];
 
   @override
-  void dispose() {
-    _titleController.dispose();
-    _contentController.dispose();
-    super.dispose();
+  void initState() {
+    super.initState();
+    _fetchUserProfile();
   }
 
-  Future<void> _pickImage() async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+  Future<void> _fetchUserProfile() async {
+    if (user == null) return;
 
-    if (pickedFile != null) {
+    try {
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user!.uid)
+          .get();
+      if (userDoc.exists) {
+        setState(() {
+          _profileImageUrl = userDoc.data()?['profileImageUrl'];
+          _userName =
+              '${userDoc.data()?['firstName']} ${userDoc.data()?['lastName']}';
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching user profile: $e');
+    }
+  }
+
+  Future<void> _pickImages() async {
+    final picker = ImagePicker();
+    final pickedFiles = await picker.pickMultiImage();
+
+    if (pickedFiles != null) {
       setState(() {
-        _selectedImage = File(pickedFile.path);
+        _selectedImages = pickedFiles.map((file) => File(file.path)).toList();
       });
     }
   }
 
-  Future<String?> _uploadImage(File image, String docId) async {
+  void _showFullScreenImage(File image) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => Scaffold(
+          appBar: AppBar(),
+          body: Center(
+            child: Image.file(image),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<List<String>> _uploadImages(String docId) async {
+    List<String> imageUrls = [];
     try {
-      final storageRef = FirebaseStorage.instance
-          .ref()
-          .child('posts')
-          .child('$docId.jpg'); // Use docId to uniquely name the image
-      final uploadTask = await storageRef.putFile(image);
-      return await uploadTask.ref.getDownloadURL();
+      for (var image in _selectedImages) {
+        final storageRef = FirebaseStorage.instance
+            .ref()
+            .child('posts')
+            .child('$docId/${DateTime.now().millisecondsSinceEpoch}.jpg');
+        final uploadTask = await storageRef.putFile(image);
+        final imageUrl = await uploadTask.ref.getDownloadURL();
+        imageUrls.add(imageUrl);
+      }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error uploading image: $e')),
+        SnackBar(content: Text('Error uploading images: $e')),
       );
-      return null;
     }
+    return imageUrls;
   }
 
   Future<void> _submitPost() async {
     if (_titleController.text.trim().isEmpty ||
         _contentController.text.trim().isEmpty ||
         _selectedCategory == null) {
-      showCupertinoDialog(
+      showDialog(
         context: context,
-        builder: (context) => CupertinoAlertDialog(
+        builder: (context) => AlertDialog(
           title: const Text('Error'),
           content: const Text('Please fill in all required fields.'),
           actions: [
-            CupertinoDialogAction(
+            TextButton(
               child: const Text('OK'),
               onPressed: () => Navigator.of(context).pop(),
             ),
@@ -87,39 +127,34 @@ class _NewPostPageState extends State<NewPostPage> {
     });
 
     try {
-      // Create a new document in the "posts" collection
       final docRef = FirebaseFirestore.instance.collection('posts').doc();
 
-      // Build the post data
       final postData = {
         'title': _titleController.text.trim(),
         'content': _contentController.text.trim(),
         'category': _selectedCategory,
+        'tags': _tagController.text.trim(),
         'author': user?.uid,
         'timestamp': FieldValue.serverTimestamp(),
-        'imageUrl': '', // Placeholder for image URL
+        'imageUrls': [], // Placeholder for image URLs
       };
 
-      // Save the initial document
       await docRef.set(postData);
 
-      // If an image is selected, upload it and update the document
-      if (_selectedImage != null) {
-        final imageUrl = await _uploadImage(_selectedImage!, docRef.id);
-        if (imageUrl != null) {
-          await docRef.update({'imageUrl': imageUrl});
-        }
+      if (_selectedImages.isNotEmpty) {
+        final imageUrls = await _uploadImages(docRef.id);
+        await docRef.update({'imageUrls': imageUrls});
       }
 
-      Navigator.of(context).pop('Post Added'); // Notify parent of success
+      Navigator.of(context).pop('Post Added');
     } catch (e) {
-      showCupertinoDialog(
+      showDialog(
         context: context,
-        builder: (context) => CupertinoAlertDialog(
+        builder: (context) => AlertDialog(
           title: const Text('Error'),
           content: Text('Failed to submit post: $e'),
           actions: [
-            CupertinoDialogAction(
+            TextButton(
               child: const Text('OK'),
               onPressed: () => Navigator.of(context).pop(),
             ),
@@ -133,120 +168,240 @@ class _NewPostPageState extends State<NewPostPage> {
     }
   }
 
-  void _showCategorySelector() {
-    showCupertinoModalPopup(
-      context: context,
-      builder: (context) => CupertinoActionSheet(
-        title: const Text('Select a Category'),
-        actions: _categories.map((category) {
-          return CupertinoActionSheetAction(
-            child: Text(category),
-            onPressed: () {
-              setState(() {
-                _selectedCategory = category;
-              });
-              Navigator.of(context).pop();
-            },
-          );
-        }).toList(),
-        cancelButton: CupertinoActionSheetAction(
-          isDefaultAction: true,
-          child: const Text('Cancel'),
-          onPressed: () {
-            Navigator.of(context).pop();
-          },
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    return CupertinoPageScaffold(
-      navigationBar: const CupertinoNavigationBar(
-        middle: Text('Add New Post'),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Add New Post'),
       ),
-      child: DefaultTextStyle(
-        style: const TextStyle(
-          fontFamily: 'Poppins',
-          fontSize: 14,
-          color: Colors.black,
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Category', style: TextStyle(fontSize: 18)),
-                CupertinoButton(
-                  padding: EdgeInsets.zero,
-                  onPressed: _showCategorySelector,
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Profile Section
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 25,
+                    backgroundImage: _profileImageUrl != null
+                        ? NetworkImage(_profileImageUrl!)
+                        : const AssetImage('assets/images/defaultprofile.png')
+                            as ImageProvider,
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    _userName ?? 'Loading...',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
                     ),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: CupertinoColors.inactiveGray),
-                      borderRadius: BorderRadius.circular(8),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // Title Field
+              const Text('Title', style: TextStyle(fontSize: 18)),
+              TextField(
+                controller: _titleController,
+                maxLength: 200,
+                decoration: InputDecoration(
+                  hintText: 'Enter a title (max 200 characters)',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Category and Tag Fields
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Category', style: TextStyle(fontSize: 18)),
+                        DropdownButtonFormField<String>(
+                          value: _selectedCategory,
+                          hint: const Text('Choose a Category'),
+                          items: _categories.map((category) {
+                            return DropdownMenuItem(
+                              value: category,
+                              child: Text(category),
+                            );
+                          }).toList(),
+                          onChanged: (value) {
+                            setState(() {
+                              _selectedCategory = value;
+                            });
+                          },
+                          decoration: InputDecoration(
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 12,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                    child: Text(
-                      _selectedCategory ?? 'Select a category',
-                      style: TextStyle(
-                        color: _selectedCategory == null
-                            ? CupertinoColors.inactiveGray
-                            : CupertinoColors.black,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Add a Tag', style: TextStyle(fontSize: 18)),
+                        TextField(
+                          controller: _tagController,
+                          decoration: InputDecoration(
+                            hintText: 'Enter a hashtag',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // Content Field
+              const Text('Content', style: TextStyle(fontSize: 18)),
+              TextField(
+                controller: _contentController,
+                maxLength: 2500,
+                maxLines: 5,
+                decoration: InputDecoration(
+                  hintText: 'Write a description (max 2500 characters)',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Attach Images Section
+              Row(
+                children: [
+                  // Add Images Button
+                  Column(
+                    children: [
+                      GestureDetector(
+                        onTap: _pickImages,
+                        child: Container(
+                          width: 80,
+                          height: 80,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[200],
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.grey),
+                          ),
+                          child: const Icon(
+                            Icons.add,
+                            size: 40,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'Add Images',
+                        style: TextStyle(fontSize: 12, color: Colors.grey),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(width: 16),
+
+                  // Display Selected Images
+                  if (_selectedImages.isNotEmpty)
+                    Expanded(
+                      child: Row(
+                        children: List.generate(
+                          _selectedImages.length > 3
+                              ? 3
+                              : _selectedImages.length,
+                          (index) {
+                            if (index == 2 && _selectedImages.length > 3) {
+                              return Stack(
+                                children: [
+                                  GestureDetector(
+                                    onTap: () => _showFullScreenImage(
+                                        _selectedImages[index]),
+                                    child: Container(
+                                      width: 80,
+                                      height: 80,
+                                      margin: const EdgeInsets.only(right: 8),
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(8),
+                                        image: DecorationImage(
+                                          image:
+                                              FileImage(_selectedImages[index]),
+                                          fit: BoxFit.cover,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  Positioned.fill(
+                                    child: Container(
+                                      alignment: Alignment.center,
+                                      color: Colors.black.withOpacity(0.5),
+                                      child: Text(
+                                        '+${_selectedImages.length - 2}',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            } else {
+                              return GestureDetector(
+                                onTap: () => _showFullScreenImage(
+                                    _selectedImages[index]),
+                                child: Container(
+                                  width: 80,
+                                  height: 80,
+                                  margin: const EdgeInsets.only(right: 8),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(8),
+                                    image: DecorationImage(
+                                      image: FileImage(_selectedImages[index]),
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }
+                          },
+                        ),
                       ),
                     ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                const Text('Title', style: TextStyle(fontSize: 18)),
-                CupertinoTextField(
-                  controller: _titleController,
-                  maxLength: 200,
-                  placeholder: 'Enter a title (max 200 characters)',
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: CupertinoColors.inactiveGray),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                const Text('Content', style: TextStyle(fontSize: 18)),
-                CupertinoTextField(
-                  controller: _contentController,
-                  maxLength: 2500,
-                  placeholder: 'Write a description (max 2500 characters)',
-                  maxLines: 5,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: CupertinoColors.inactiveGray),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                const Text('Attach Image', style: TextStyle(fontSize: 18)),
-                CupertinoButton(
-                  child: const Text('Select Image'),
-                  onPressed: _pickImage,
-                ),
-                if (_selectedImage != null)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8.0),
-                    child: Image.file(_selectedImage!, height: 150),
-                  ),
-                const Spacer(),
-                CupertinoButton.filled(
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // Submit Button
+              Align(
+                alignment: Alignment.centerRight,
+                child: ElevatedButton(
                   onPressed: _isSubmitting ? null : _submitPost,
                   child: _isSubmitting
-                      ? const CupertinoActivityIndicator()
+                      ? const CircularProgressIndicator()
                       : const Text('Submit Post'),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
