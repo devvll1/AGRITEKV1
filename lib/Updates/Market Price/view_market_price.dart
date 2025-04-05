@@ -1,5 +1,8 @@
+// ignore_for_file: sort_child_properties_last
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/cupertino.dart'; // Import Cupertino icons
 import 'add_market_price.dart'; // Import the AddMarketPrice page
 
 class ViewMarketPrice extends StatefulWidget {
@@ -30,24 +33,38 @@ class _ViewMarketPriceState extends State<ViewMarketPrice> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('View Market Prices'),
+        title: const Text('Market Prices'),
       ),
       body: SafeArea(
-        // Wrap the body in SafeArea
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
             children: [
               DropdownButtonFormField<String>(
                 value: _selectedCommodity,
-                decoration:
-                    const InputDecoration(labelText: 'Filter by Commodity'),
-                items: _commodities.map((commodity) {
-                  return DropdownMenuItem(
-                    value: commodity,
-                    child: Text(commodity),
-                  );
-                }).toList(),
+                decoration: InputDecoration(
+                  labelText: 'Filter by Commodity',
+                  labelStyle: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.bold),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  contentPadding:
+                      const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                ),
+                hint: const Text('Select a commodity'),
+                items: [
+                  const DropdownMenuItem(
+                    value: null, // Null value for "All Commodities"
+                    child: Text('All Commodities'),
+                  ),
+                  ..._commodities.map((commodity) {
+                    return DropdownMenuItem(
+                      value: commodity,
+                      child: Text(commodity),
+                    );
+                  }).toList(),
+                ],
                 onChanged: (value) {
                   setState(() {
                     _selectedCommodity = value;
@@ -123,29 +140,50 @@ class _ViewMarketPriceState extends State<ViewMarketPrice> {
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text(
-                                      'Highest: ₱${item['highest_price'].toStringAsFixed(2)}',
-                                      style: const TextStyle(
-                                        fontSize: 13.0,
-                                        color: Colors.red,
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                                    Row(
+                                      children: [
+                                        const Icon(CupertinoIcons.arrow_up,
+                                            size: 16, color: Colors.red),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          'Highest: ${item['highest_price'].toStringAsFixed(2)}',
+                                          style: const TextStyle(
+                                            fontSize: 13.0,
+                                            color: Colors.red,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                    Text(
-                                      'Lowest: ₱${item['lowest_price'].toStringAsFixed(2)}',
-                                      style: const TextStyle(
-                                        fontSize: 13.0,
-                                        color: Colors.green,
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                                    Row(
+                                      children: [
+                                        const Icon(CupertinoIcons.arrow_down,
+                                            size: 16, color: Colors.green),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          'Lowest: ${item['lowest_price'].toStringAsFixed(2)}',
+                                          style: const TextStyle(
+                                            fontSize: 13.0,
+                                            color: Colors.green,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                    Text(
-                                      'Prevailing: ₱${item['prevailing_price'].toStringAsFixed(2)}',
-                                      style: const TextStyle(
-                                        fontSize: 13.0,
-                                        color: Colors.blue,
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                                    Row(
+                                      children: [
+                                        const Icon(CupertinoIcons.chart_bar,
+                                            size: 16, color: Colors.blue),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          'Prevailing: ${item['prevailing_price'].toStringAsFixed(2)}',
+                                          style: const TextStyle(
+                                            fontSize: 13.0,
+                                            color: Colors.blue,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ),
@@ -169,7 +207,7 @@ class _ViewMarketPriceState extends State<ViewMarketPrice> {
             MaterialPageRoute(builder: (context) => AddMarketPrice()),
           );
         },
-        child: const Icon(Icons.add),
+        child: const Icon(CupertinoIcons.add), // Changed to CupertinoIcons.add
         tooltip: 'Add Market Price',
       ),
     );

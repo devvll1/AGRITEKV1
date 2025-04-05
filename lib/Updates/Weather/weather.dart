@@ -237,14 +237,14 @@ class WeatherScreenState extends State<WeatherScreen> {
 
             // Use the same logic as the 7-day forecast
             final date =
-                DateTime.parse(data['daily']['time'][2]); // Tomorrow's date
-            final maxTemp = data['daily']['temperature_2m_max'][2];
-            final minTemp = data['daily']['temperature_2m_min'][2];
+                DateTime.parse(data['daily']['time'][1]); // Tomorrow's date
+            final maxTemp = data['daily']['temperature_2m_max'][1];
+            final minTemp = data['daily']['temperature_2m_min'][1];
             final avgTemp = ((maxTemp + minTemp) / 2)
                 .toStringAsFixed(1); // Average temperature
             final precipitationChance =
-                data['daily']['precipitation_probability_max'][2];
-            final weatherCode = data['daily']['weathercode'][2];
+                data['daily']['precipitation_probability_max'][1];
+            final weatherCode = data['daily']['weathercode'][1];
             final description = _getWeatherDescription(weatherCode);
 
             tomorrowsForecast = {
@@ -341,7 +341,7 @@ class WeatherScreenState extends State<WeatherScreen> {
   // Helper method to get weather icon based on weather description
   IconData _getWeatherIcon(String weather) {
     switch (weather.toLowerCase()) {
-      case 'clear':
+      case 'clear skies':
         return CupertinoIcons.sun_max_fill;
       case 'mainly clear':
       case 'partly cloudy':
@@ -358,15 +358,24 @@ class WeatherScreenState extends State<WeatherScreen> {
       case 'moderate rain':
       case 'heavy rain':
         return CupertinoIcons.cloud_rain_fill;
-      case 'slight snow':
-      case 'moderate snow':
-      case 'heavy snow':
+      case 'slight rain showers':
+      case 'moderate rain showers':
+      case 'violent rain showers':
+        return CupertinoIcons.cloud_bolt_rain_fill;
+      case 'slight snowfall':
+      case 'moderate snowfall':
+      case 'heavy snowfall':
+        return CupertinoIcons.snow;
+      case 'snow grains':
         return CupertinoIcons.snow;
       case 'thunderstorm':
         return CupertinoIcons.cloud_bolt_fill;
+      case 'thunderstorm with slight hail':
+      case 'thunderstorm with heavy hail':
+        return CupertinoIcons.cloud_hail_fill;
       default:
-        return CupertinoIcons
-            .question_circle_fill; // Default icon for unknown weather
+        // Fallback icon for unknown weather descriptions
+        return CupertinoIcons.question_circle_fill;
     }
   }
 
@@ -684,7 +693,7 @@ class WeatherScreenState extends State<WeatherScreen> {
           ),
           // Back button and title in the upper left corner
           Positioned(
-            top: 8,
+            top: 17,
             left: 8,
             child: Row(
               children: [
