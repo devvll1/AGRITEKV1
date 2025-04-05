@@ -1,3 +1,5 @@
+// ignore_for_file: depend_on_referenced_packages, unnecessary_to_list_in_spreads, library_private_types_in_public_api, unnecessary_null_comparison
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart'; // For image picking
@@ -7,7 +9,7 @@ import 'package:path/path.dart'; // For handling file paths
 
 class ViewGuides extends StatelessWidget {
   // Renamed from ViewCrops to ViewGuides
-  const ViewGuides({Key? key}) : super(key: key);
+  const ViewGuides({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -84,7 +86,7 @@ class ViewGuides extends StatelessWidget {
 }
 
 class CropFarmingViewer extends StatelessWidget {
-  const CropFarmingViewer({Key? key}) : super(key: key);
+  const CropFarmingViewer({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -166,8 +168,7 @@ class TitleViewer extends StatefulWidget {
   final String category;
   final String? cropCategory;
 
-  const TitleViewer({Key? key, required this.category, this.cropCategory})
-      : super(key: key);
+  const TitleViewer({super.key, required this.category, this.cropCategory});
 
   @override
   _TitleViewerState createState() => _TitleViewerState();
@@ -287,7 +288,7 @@ class _TitleViewerState extends State<TitleViewer> {
 class InfoViewer extends StatelessWidget {
   final String docId;
 
-  const InfoViewer({Key? key, required this.docId}) : super(key: key);
+  const InfoViewer({super.key, required this.docId});
 
   @override
   Widget build(BuildContext context) {
@@ -459,8 +460,7 @@ class InfoViewer extends StatelessWidget {
 class FullScreenImageViewer extends StatelessWidget {
   final String imageUrl;
 
-  const FullScreenImageViewer({Key? key, required this.imageUrl})
-      : super(key: key);
+  const FullScreenImageViewer({super.key, required this.imageUrl});
 
   @override
   Widget build(BuildContext context) {
@@ -485,7 +485,7 @@ class FullScreenImageViewer extends StatelessWidget {
 class EditInfoPage extends StatefulWidget {
   final String docId;
 
-  const EditInfoPage({Key? key, required this.docId}) : super(key: key);
+  const EditInfoPage({super.key, required this.docId});
 
   @override
   _EditInfoPageState createState() => _EditInfoPageState();
@@ -573,7 +573,6 @@ class _EditInfoPageState extends State<EditInfoPage> {
       // Get the public URL of the uploaded image
       return await snapshot.ref.getDownloadURL();
     } catch (e) {
-      print('Error uploading image: $e');
       return null;
     }
   }

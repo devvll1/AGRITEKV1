@@ -1,3 +1,5 @@
+// ignore_for_file: unnecessary_null_comparison
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -358,9 +360,9 @@ class _AddInformationFormState extends State<AddInformationForm> {
                 ),
                 const SizedBox(height: 16),
                 if (_isSubmitting)
-                  Center(
+                  const Center(
                     child: Column(
-                      children: const [
+                      children: [
                         CircularProgressIndicator(),
                         SizedBox(height: 8),
                         Text('Submitting, please wait...'),
