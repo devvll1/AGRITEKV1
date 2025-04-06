@@ -96,9 +96,9 @@ class _ViewMarketPriceState extends State<ViewMarketPrice> {
                         final item = data[index];
                         return Card(
                           color: Colors.lightBlue[50],
-                          margin: const EdgeInsets.symmetric(vertical: 6.0),
+                          margin: const EdgeInsets.symmetric(vertical: 7.0),
                           child: Padding(
-                            padding: const EdgeInsets.all(12.0),
+                            padding: const EdgeInsets.all(14.0),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -109,14 +109,14 @@ class _ViewMarketPriceState extends State<ViewMarketPrice> {
                                     Text(
                                       item['product_name'],
                                       style: const TextStyle(
-                                        fontSize: 16.0,
+                                        fontSize: 15.0,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
                                     Text(
                                       _formatDate(item['date']),
                                       style: const TextStyle(
-                                        fontSize: 12.0,
+                                        fontSize: 11.0,
                                         color: Colors.grey,
                                       ),
                                     ),
@@ -126,13 +126,13 @@ class _ViewMarketPriceState extends State<ViewMarketPrice> {
                                 Text(
                                   '${item['commodity']}',
                                   style: const TextStyle(
-                                    fontSize: 11.0,
+                                    fontSize: 10.0,
                                   ),
                                 ),
                                 Text(
                                   'Specification: ${item['specification']}',
                                   style: const TextStyle(
-                                    fontSize: 10.0,
+                                    fontSize: 9.0,
                                   ),
                                 ),
                                 const SizedBox(height: 12),
@@ -143,12 +143,12 @@ class _ViewMarketPriceState extends State<ViewMarketPrice> {
                                     Row(
                                       children: [
                                         const Icon(CupertinoIcons.arrow_up,
-                                            size: 16, color: Colors.red),
-                                        const SizedBox(width: 4),
+                                            size: 13, color: Colors.red),
+                                        const SizedBox(width: 3),
                                         Text(
                                           'Highest: ${item['highest_price'].toStringAsFixed(2)}',
                                           style: const TextStyle(
-                                            fontSize: 13.0,
+                                            fontSize: 11.0,
                                             color: Colors.red,
                                             fontWeight: FontWeight.bold,
                                           ),
@@ -158,12 +158,12 @@ class _ViewMarketPriceState extends State<ViewMarketPrice> {
                                     Row(
                                       children: [
                                         const Icon(CupertinoIcons.arrow_down,
-                                            size: 16, color: Colors.green),
-                                        const SizedBox(width: 4),
+                                            size: 13, color: Colors.green),
+                                        const SizedBox(width: 3),
                                         Text(
                                           'Lowest: ${item['lowest_price'].toStringAsFixed(2)}',
                                           style: const TextStyle(
-                                            fontSize: 13.0,
+                                            fontSize: 11.0,
                                             color: Colors.green,
                                             fontWeight: FontWeight.bold,
                                           ),
@@ -173,12 +173,12 @@ class _ViewMarketPriceState extends State<ViewMarketPrice> {
                                     Row(
                                       children: [
                                         const Icon(CupertinoIcons.chart_bar,
-                                            size: 16, color: Colors.blue),
-                                        const SizedBox(width: 4),
+                                            size: 13, color: Colors.blue),
+                                        const SizedBox(width: 3),
                                         Text(
                                           'Prevailing: ${item['prevailing_price'].toStringAsFixed(2)}',
                                           style: const TextStyle(
-                                            fontSize: 13.0,
+                                            fontSize: 11.0,
                                             color: Colors.blue,
                                             fontWeight: FontWeight.bold,
                                           ),

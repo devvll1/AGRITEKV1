@@ -223,7 +223,7 @@ class _NewPostPageState extends State<NewPostPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Category', style: TextStyle(fontSize: 18)),
+                        const Text('Category', style: TextStyle(fontSize: 16)),
                         DropdownButtonFormField<String>(
                           value: _selectedCategory,
                           hint: const Text('Choose a Category'),
@@ -251,12 +251,12 @@ class _NewPostPageState extends State<NewPostPage> {
                       ],
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 6),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Add a Tag', style: TextStyle(fontSize: 18)),
+                        const Text('Add a Tag', style: TextStyle(fontSize: 16)),
                         TextField(
                           controller: _tagController,
                           decoration: InputDecoration(

@@ -42,21 +42,14 @@ class NotificationsPage extends StatelessWidget {
               final notification = notifications[index];
               final data = notification.data() as Map<String, dynamic>;
 
-              return ListTile(
-                title: Text(
-                  data['type'] == 'like'
-                      ? '${data['senderName']} liked your post: ${data['postTitle']}'
-                      : '${data['senderName']} commented on your post: ${data['postTitle']}',
-                ),
-                subtitle:
-                    data['type'] == 'comment' ? Text(data['comment']) : null,
-                trailing: IconButton(
-                  icon: const Icon(Icons.check),
-                  onPressed: () {
-                    notification.reference.update({'isRead': true});
-                  },
-                ),
+              final senderName = data['senderName'] ?? 'Someone';
+              final isRead = data['isRead'] ?? false;
+
+              return GestureDetector(
                 onTap: () async {
+                  // Mark the notification as read
+                  await notification.reference.update({'isRead': true});
+
                   // Fetch the post details from Firestore
                   final postSnapshot = await FirebaseFirestore.instance
                       .collection('posts')
@@ -96,6 +89,52 @@ class NotificationsPage extends StatelessWidget {
                     );
                   }
                 },
+                child: Container(
+                  color: isRead
+                      ? Colors
+                          .white // Default background for read notifications
+                      : Colors.grey[200], // Highlight unread notifications
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                  child: Row(
+                    children: [
+                      // Circle indicator for unread notifications
+                      if (!isRead)
+                        Container(
+                          width: 10,
+                          height: 10,
+                          decoration: const BoxDecoration(
+                            color: Colors.blue, // Indicator color
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      if (!isRead) const SizedBox(width: 10), // Spacing
+
+                      // Notification content
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              data['type'] == 'like'
+                                  ? '$senderName liked your post: ${data['postTitle']}'
+                                  : '$senderName commented on your post: ${data['postTitle']}',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            if (data['type'] == 'comment')
+                              Text(
+                                data['comment'] ?? '',
+                                style: const TextStyle(fontSize: 12),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               );
             },
           );
@@ -134,7 +173,16 @@ class NotificationsPage extends StatelessWidget {
             .collection('users')
             .doc(userId)
             .get();
-        final userName = userDoc.data()?['name'] ?? 'Someone';
+
+        if (!userDoc.exists) {
+          debugPrint('User document does not exist');
+          return;
+        }
+
+        final userData = userDoc.data()!;
+        final firstName = userData['firstName'] ?? 'Unknown';
+        final lastName = userData['lastName'] ?? 'User';
+        final fullName = '$firstName $lastName';
 
         // Add a notification for the post author
         if (postAuthorId != userId) {
@@ -149,7 +197,7 @@ class NotificationsPage extends StatelessWidget {
             'postId': postId,
             'postTitle': postTitle,
             'senderId': userId,
-            'senderName': userName,
+            'senderName': fullName,
             'timestamp': FieldValue.serverTimestamp(),
             'isRead': false,
           });
@@ -178,6 +226,7 @@ class NotificationsPage extends StatelessWidget {
     }
 
     try {
+      // Fetch the current user's details
       final userDoc = await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
@@ -193,6 +242,7 @@ class NotificationsPage extends StatelessWidget {
       final lastName = userData['lastName'] ?? 'User';
       final fullName = '$firstName $lastName';
 
+      // Prepare the comment data
       final commentData = {
         'text': comment,
         'timestamp': FieldValue.serverTimestamp(),
@@ -202,10 +252,9 @@ class NotificationsPage extends StatelessWidget {
             userData['profileImageUrl'] ?? 'assets/images/defaultprofile.png',
       };
 
+      // Add the comment to Firestore
       final postDoc =
           FirebaseFirestore.instance.collection('posts').doc(postId);
-
-      // Add the comment to Firestore
       await postDoc.collection('comments').add(commentData);
 
       // Add a notification for the post author

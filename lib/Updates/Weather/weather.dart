@@ -693,8 +693,8 @@ class WeatherScreenState extends State<WeatherScreen> {
           ),
           // Back button and title in the upper left corner
           Positioned(
-            top: 17,
-            left: 8,
+            top: 22,
+            left: 9,
             child: Row(
               children: [
                 IconButton(
@@ -722,7 +722,7 @@ class WeatherScreenState extends State<WeatherScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(
-                  height: 50), // Space below the back button and title
+                  height: 70), // Space below the back button and title
               // Weather Card
               Expanded(
                 child: ListView(
@@ -734,37 +734,62 @@ class WeatherScreenState extends State<WeatherScreen> {
                     // Hourly Forecast Section
                     _buildHourlyForecast(),
                     // Tomorrow's Forecast Section
-                    _buildTomorrowsForecast(),
-                    // Weekly Forecast Button
-                    Align(
-                      alignment:
-                          Alignment.centerRight, // Align button to the right
-                      child: Padding(
-                        padding: const EdgeInsets.only(right: 16.0, top: 16.0),
-                        child: ElevatedButton(
-                          onPressed: () {
-                            Navigator.pushNamed(context, '/forecast');
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 12,
-                              horizontal: 24,
-                            ),
-                          ),
-                          child: const Text(
-                            'View Weekly Forecast',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.normal,
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Tomorrow's Forecast Section
+                        _buildTomorrowsForecast(),
+
+                        // Reminder Text
+                        const Align(
+                          alignment: Alignment
+                              .centerLeft, // Align the reminder to the left
+                          child: Padding(
+                            padding: EdgeInsets.only(left: 16.0, top: 16.0),
+                            child: Text(
+                              'Please note: The weather data displayed may not be 100% accurate. Conditions can change rapidly, and this information should be used as a general guide only. Stay hydrated and plan your day accordingly!',
+                              style: TextStyle(
+                                fontSize: 7,
+                                fontWeight: FontWeight.normal,
+                                color: Colors.black87,
+                              ),
                             ),
                           ),
                         ),
-                      ),
+
+                        // Weekly Forecast Button
+                        Align(
+                          alignment: Alignment
+                              .centerRight, // Align button to the right
+                          child: Padding(
+                            padding:
+                                const EdgeInsets.only(right: 16.0, top: 16.0),
+                            child: ElevatedButton(
+                              onPressed: () {
+                                Navigator.pushNamed(context, '/forecast');
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.blue,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                  horizontal: 24,
+                                ),
+                              ),
+                              child: const Text(
+                                'View Weekly Forecast',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.normal,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),

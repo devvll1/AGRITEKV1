@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import 'package:location/location.dart' as location;
 import 'package:permission_handler/permission_handler.dart';
@@ -16,7 +18,8 @@ class _WelcomePageState extends State<WelcomePage> {
   int _currentPage = 0;
 
   final location.Location _location = location.Location();
-  location.PermissionStatus _locationPermission = location.PermissionStatus.denied;
+  location.PermissionStatus _locationPermission =
+      location.PermissionStatus.denied;
 
   final List<String> _titles = [
     "Welcome to AgriTek!",
@@ -186,7 +189,8 @@ class _WelcomePageState extends State<WelcomePage> {
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
-                  padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
@@ -201,7 +205,8 @@ class _WelcomePageState extends State<WelcomePage> {
                 onPressed: _requestPermissions,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
-                  padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),

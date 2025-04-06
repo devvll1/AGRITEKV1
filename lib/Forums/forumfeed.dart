@@ -96,50 +96,77 @@ class _ForumsPageState extends State<ForumsPage> {
     final userId = user!.uid;
     final postDoc = FirebaseFirestore.instance.collection('posts').doc(postId);
 
-    if (currentLikes.contains(userId)) {
-      await postDoc.update({
-        'likes': FieldValue.arrayRemove([userId]),
-      });
-    } else {
-      await postDoc.update({
-        'likes': FieldValue.arrayUnion([userId]),
-      });
-
-      // Add a notification for the post author
-      if (postAuthorId != userId) {
-        final notificationRef = FirebaseFirestore.instance
-            .collection('notifications')
-            .doc(postAuthorId)
-            .collection('userNotifications')
-            .doc();
-
-        await notificationRef.set({
-          'type': 'like',
-          'postId': postId,
-          'postTitle': postTitle,
-          'senderId': userId,
-          'timestamp': FieldValue.serverTimestamp(),
-          'isRead': false,
+    try {
+      if (currentLikes.contains(userId)) {
+        // Unlike the post
+        await postDoc.update({
+          'likes': FieldValue.arrayRemove([userId]),
         });
+      } else {
+        // Like the post
+        await postDoc.update({
+          'likes': FieldValue.arrayUnion([userId]),
+        });
+
+        // Fetch the user's name
+        final userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(userId)
+            .get();
+
+        if (!userDoc.exists) {
+          debugPrint('User document does not exist');
+          return;
+        }
+
+        final userData = userDoc.data()!;
+        final firstName = userData['firstName'] ?? 'Unknown';
+        final lastName = userData['lastName'] ?? 'User';
+        final fullName = '$firstName $lastName';
+
+        // Add a notification for the post author
+        if (postAuthorId != userId) {
+          final notificationRef = FirebaseFirestore.instance
+              .collection('notifications')
+              .doc(postAuthorId)
+              .collection('userNotifications')
+              .doc();
+
+          await notificationRef.set({
+            'type': 'like',
+            'postId': postId,
+            'postTitle': postTitle,
+            'senderId': userId,
+            'senderName': fullName,
+            'timestamp': FieldValue.serverTimestamp(),
+            'isRead': false,
+          });
+
+          debugPrint('Notification added for like');
+        }
       }
+    } catch (e) {
+      debugPrint('Error toggling like: $e');
     }
   }
 
   Future<void> _addComment(String comment, String postId, String postTitle,
       String postAuthorId) async {
-    if (comment.isEmpty) return;
+    if (user == null) {
+      debugPrint('User is not logged in');
+      return;
+    }
+
+    if (comment.isEmpty) {
+      debugPrint('Comment is empty');
+      return;
+    }
 
     try {
-      final user = FirebaseAuth.instance.currentUser;
-
-      if (user == null) {
-        debugPrint('User is not logged in');
-        return;
-      }
-
+      // Fetch the current user's details
       final userDoc = await FirebaseFirestore.instance
           .collection('users')
-          .doc(user.uid)
+          .doc(user!.uid)
           .get();
 
       if (!userDoc.exists) {
@@ -150,24 +177,25 @@ class _ForumsPageState extends State<ForumsPage> {
       final userData = userDoc.data()!;
       final firstName = userData['firstName'] ?? 'Unknown';
       final lastName = userData['lastName'] ?? 'User';
+      final fullName = '$firstName $lastName';
 
+      // Prepare the comment data
       final commentData = {
         'text': comment,
         'timestamp': FieldValue.serverTimestamp(),
-        'author': '$firstName $lastName',
-        'userId': user.uid,
+        'author': fullName,
+        'userId': user!.uid,
         'profileImageUrl':
             userData['profileImageUrl'] ?? 'assets/images/defaultprofile.png',
       };
 
+      // Add the comment to Firestore
       final postDoc =
           FirebaseFirestore.instance.collection('posts').doc(postId);
-
-      // Add the comment to Firestore
       await postDoc.collection('comments').add(commentData);
 
       // Add a notification for the post author
-      if (postAuthorId != user.uid) {
+      if (postAuthorId != user!.uid) {
         final notificationRef = FirebaseFirestore.instance
             .collection('notifications')
             .doc(postAuthorId)
@@ -178,11 +206,14 @@ class _ForumsPageState extends State<ForumsPage> {
           'type': 'comment',
           'postId': postId,
           'postTitle': postTitle,
-          'senderId': user.uid,
+          'senderId': user!.uid,
+          'senderName': fullName,
           'comment': comment,
           'timestamp': FieldValue.serverTimestamp(),
           'isRead': false,
         });
+
+        debugPrint('Notification added for comment');
       }
 
       _commentController.clear(); // Clear the comment input field
@@ -526,12 +557,11 @@ class _ForumsPageState extends State<ForumsPage> {
                                           color: Colors.grey, thickness: 1),
                                       if (postData['imageUrls'] != null &&
                                           postData['imageUrls'].isNotEmpty)
-                                        _buildDynamicImageRow(
-                                            postData['imageUrls']),
+                                        _buildImageGrid(postData['imageUrls']),
                                       const SizedBox(height: 8),
                                       Row(
                                         mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
+                                            MainAxisAlignment.spaceAround,
                                         children: [
                                           Row(
                                             children: [
@@ -641,99 +671,68 @@ class _ForumsPageState extends State<ForumsPage> {
     );
   }
 
-  Widget _buildDynamicImageRow(List<dynamic> imageUrls) {
-    final imageCount = imageUrls.length;
+  Widget _buildImageGrid(List<dynamic> imageUrls) {
+    if (imageUrls.isEmpty) return const SizedBox.shrink();
 
-    if (imageCount == 1) {
-      // Show a single full-width image
-      return GestureDetector(
-        onTap: () => _showFullScreenImage(imageUrls[0]),
-        child: Container(
-          width: double.infinity,
-          height: 200,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-            image: DecorationImage(
-              image: NetworkImage(imageUrls[0]),
-              fit: BoxFit.cover,
-            ),
-          ),
-        ),
-      );
-    } else if (imageCount == 2) {
-      // Show two images side by side
-      return Row(
-        children: imageUrls.take(2).map((imageUrl) {
-          return Expanded(
-            child: GestureDetector(
-              onTap: () => _showFullScreenImage(imageUrl),
-              child: Container(
-                height: 150,
-                margin: const EdgeInsets.only(right: 4),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  image: DecorationImage(
-                    image: NetworkImage(imageUrl),
-                    fit: BoxFit.cover,
+    final imageCount = imageUrls.length;
+    final maxImagesToShow = 4;
+
+    return SizedBox(
+      height: 300, // Set a fixed height for the row
+      child: Row(
+        mainAxisAlignment:
+            MainAxisAlignment.spaceBetween, // Distribute spaces evenly
+        children: List.generate(
+          imageCount > maxImagesToShow ? maxImagesToShow : imageCount,
+          (index) {
+            if (index == maxImagesToShow - 1 && imageCount > maxImagesToShow) {
+              // Show "+X" overlay for additional images
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () => _showFullScreenGallery(imageUrls, index),
+                  child: Stack(
+                    children: [
+                      Container(
+                        margin: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          image: DecorationImage(
+                            image: NetworkImage(imageUrls[index]),
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ),
+                      Positioned.fill(
+                        child: Container(
+                          alignment: Alignment.center,
+                          color: Colors.black.withOpacity(0.5),
+                          child: Text(
+                            '+${imageCount - maxImagesToShow}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-            ),
-          );
-        }).toList(),
-      );
-    } else {
-      // Show three images, with the last one showing "+X" if there are more
-      return Row(
-        children: List.generate(
-          3,
-          (index) {
-            if (index == 2 && imageCount > 3) {
-              return Stack(
-                children: [
-                  GestureDetector(
-                    onTap: () => _showFullScreenImage(imageUrls[index]),
-                    child: Container(
-                      width: 100,
-                      height: 100,
-                      margin: const EdgeInsets.only(right: 4),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        image: DecorationImage(
-                          image: NetworkImage(imageUrls[index]),
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
-                  ),
-                  Positioned.fill(
-                    child: Container(
-                      alignment: Alignment.center,
-                      color: Colors.black.withOpacity(0.5),
-                      child: Text(
-                        '+${imageCount - 3}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
               );
             } else {
-              return GestureDetector(
-                onTap: () => _showFullScreenImage(imageUrls[index]),
-                child: Container(
-                  width: 100,
-                  height: 100,
-                  margin: const EdgeInsets.only(right: 4),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    image: DecorationImage(
-                      image: NetworkImage(imageUrls[index]),
-                      fit: BoxFit.cover,
+              // Show individual images
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () => _showFullScreenGallery(imageUrls, index),
+                  child: Container(
+                    margin: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      image: DecorationImage(
+                        image: NetworkImage(imageUrls[index]),
+                        fit: BoxFit.cover,
+                      ),
                     ),
                   ),
                 ),
@@ -741,8 +740,20 @@ class _ForumsPageState extends State<ForumsPage> {
             }
           },
         ),
-      );
-    }
+      ),
+    );
+  }
+
+  void _showFullScreenGallery(List<dynamic> imageUrls, int initialIndex) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => FullScreenGallery(
+          imageUrls: imageUrls,
+          initialIndex: initialIndex,
+        ),
+      ),
+    );
   }
 
   void _showFullScreenImage(String imageUrl) {
@@ -755,6 +766,173 @@ class _ForumsPageState extends State<ForumsPage> {
             child: Image.network(imageUrl),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class FullScreenGallery extends StatefulWidget {
+  final List<dynamic> imageUrls;
+  final int initialIndex;
+
+  const FullScreenGallery({
+    super.key,
+    required this.imageUrls,
+    required this.initialIndex,
+  });
+
+  @override
+  _FullScreenGalleryState createState() => _FullScreenGalleryState();
+}
+
+class _FullScreenGalleryState extends State<FullScreenGallery> {
+  late PageController _pageController;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(initialPage: widget.initialIndex);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        leading: IconButton(
+          icon: const Icon(Icons.close, color: Colors.white),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
+      body: PageView.builder(
+        controller: _pageController,
+        itemCount: widget.imageUrls.length,
+        itemBuilder: (context, index) {
+          return Center(
+            child: Image.network(
+              widget.imageUrls[index],
+              fit: BoxFit.contain,
+              loadingBuilder: (context, child, loadingProgress) {
+                if (loadingProgress == null) return child;
+                return const Center(
+                  child: CircularProgressIndicator(),
+                );
+              },
+              errorBuilder: (context, error, stackTrace) => const Icon(
+                Icons.broken_image,
+                color: Colors.white,
+                size: 50,
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class NotificationsPage extends StatelessWidget {
+  const NotificationsPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Notifications'),
+      ),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('notifications')
+            .doc(userId)
+            .collection('userNotifications')
+            .orderBy('timestamp', descending: true)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final notifications = snapshot.data!.docs;
+
+          if (notifications.isEmpty) {
+            return const Center(child: Text('No notifications.'));
+          }
+
+          return ListView.builder(
+            itemCount: notifications.length,
+            itemBuilder: (context, index) {
+              final notification = notifications[index];
+              final data = notification.data() as Map<String, dynamic>;
+
+              final senderName = data['senderName'] ?? 'Someone';
+
+              return ListTile(
+                title: Text(
+                  data['type'] == 'like'
+                      ? '$senderName liked your post: ${data['postTitle']}'
+                      : '$senderName commented on your post: ${data['postTitle']}',
+                ),
+                subtitle:
+                    data['type'] == 'comment' ? Text(data['comment']) : null,
+                trailing: IconButton(
+                  icon: const Icon(Icons.check),
+                  onPressed: () {
+                    notification.reference.update({'isRead': true});
+                  },
+                ),
+                onTap: () async {
+                  // Fetch the post details from Firestore
+                  final postSnapshot = await FirebaseFirestore.instance
+                      .collection('posts')
+                      .doc(data['postId'])
+                      .get();
+
+                  if (postSnapshot.exists) {
+                    final postData =
+                        postSnapshot.data() as Map<String, dynamic>;
+
+                    // Format the timestamp
+                    final timestamp = postData['timestamp'] as Timestamp;
+                    final formattedTime = DateFormat('MMM dd, yyyy hh:mm a')
+                        .format(timestamp.toDate());
+
+                    // Navigate to the ViewPostPage
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ViewPostPage(
+                          userId: postData['author'] ?? '',
+                          postId: data['postId'],
+                          title: postData['title'] ?? 'No Title',
+                          content: postData['content'] ?? 'No Content',
+                          category: postData['category'] ?? 'No Category',
+                          author: postData['author'] ?? '',
+                          time: formattedTime, // Pass the formatted time
+                          likes: postData['likes'] ?? [],
+                          imageUrls: postData['imageUrls'] ?? [],
+                          tags: postData['tags'] ?? '',
+                        ),
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Post not found.')),
+                    );
+                  }
+                },
+              );
+            },
+          );
+        },
       ),
     );
   }

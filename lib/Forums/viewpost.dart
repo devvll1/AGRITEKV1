@@ -560,47 +560,90 @@ class _ViewPostPageState extends State<ViewPostPage> {
     }
   }
 
-  Future<void> _togglePostLike() async {
-    final userId = FirebaseAuth.instance.currentUser?.uid;
-    if (userId == null) return;
+  Future<void> _togglePostLike(String postId, List<dynamic> currentLikes,
+      String postTitle, String postAuthorId) async {
+    final user = FirebaseAuth.instance.currentUser;
 
-    final postDoc =
-        FirebaseFirestore.instance.collection('posts').doc(widget.postId);
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('You must be logged in to like posts.')),
+      );
+      return;
+    }
+
+    final userId = user.uid;
+    final postDoc = FirebaseFirestore.instance.collection('posts').doc(postId);
 
     try {
-      if (_hasLiked) {
+      if (currentLikes.contains(userId)) {
+        // Unlike the post
         await postDoc.update({
           'likes': FieldValue.arrayRemove([userId]),
         });
-        setState(() {
-          _postLikes.remove(userId);
-          _hasLiked = false;
-        });
       } else {
+        // Like the post
         await postDoc.update({
           'likes': FieldValue.arrayUnion([userId]),
         });
-        setState(() {
-          _postLikes.add(userId);
-          _hasLiked = true;
-        });
+
+        // Fetch the user's name
+        final userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(userId)
+            .get();
+
+        if (!userDoc.exists) {
+          debugPrint('User document does not exist');
+          return;
+        }
+
+        final userData = userDoc.data()!;
+        final firstName = userData['firstName'] ?? 'Unknown';
+        final lastName = userData['lastName'] ?? 'User';
+        final fullName = '$firstName $lastName';
+
+        // Add a notification for the post author
+        if (postAuthorId != userId) {
+          final notificationRef = FirebaseFirestore.instance
+              .collection('notifications')
+              .doc(postAuthorId)
+              .collection('userNotifications')
+              .doc();
+
+          await notificationRef.set({
+            'type': 'like',
+            'postId': postId,
+            'postTitle': postTitle,
+            'senderId': userId,
+            'senderName': fullName,
+            'timestamp': FieldValue.serverTimestamp(),
+            'isRead': false,
+          });
+
+          debugPrint('Notification added for like');
+        }
       }
     } catch (e) {
       debugPrint('Error toggling like: $e');
     }
   }
 
-  Future<void> _addComment(String comment) async {
-    if (comment.isEmpty) return;
+  Future<void> _addComment(String comment, String postId, String postTitle,
+      String postAuthorId) async {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      debugPrint('User is not logged in');
+      return;
+    }
+
+    if (comment.isEmpty) {
+      debugPrint('Comment is empty');
+      return;
+    }
 
     try {
-      final user = FirebaseAuth.instance.currentUser;
-
-      if (user == null) {
-        debugPrint('User is not logged in');
-        return;
-      }
-
+      // Fetch the current user's details
       final userDoc = await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
@@ -614,31 +657,48 @@ class _ViewPostPageState extends State<ViewPostPage> {
       final userData = userDoc.data()!;
       final firstName = userData['firstName'] ?? 'Unknown';
       final lastName = userData['lastName'] ?? 'User';
+      final fullName = '$firstName $lastName';
 
+      // Prepare the comment data
       final commentData = {
         'text': comment,
         'timestamp': FieldValue.serverTimestamp(),
-        'author': '$firstName $lastName',
+        'author': fullName,
         'userId': user.uid,
         'profileImageUrl':
             userData['profileImageUrl'] ?? 'assets/images/defaultprofile.png',
       };
 
-      await FirebaseFirestore.instance
-          .collection('posts')
-          .doc(widget.postId)
-          .collection('comments')
-          .add(commentData);
+      // Add the comment to Firestore
+      final postDoc =
+          FirebaseFirestore.instance.collection('posts').doc(postId);
+      await postDoc.collection('comments').add(commentData);
 
-      _commentController.clear();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Comment added successfully')),
-      );
+      // Add a notification for the post author
+      if (postAuthorId != user.uid) {
+        final notificationRef = FirebaseFirestore.instance
+            .collection('notifications')
+            .doc(postAuthorId)
+            .collection('userNotifications')
+            .doc();
+
+        await notificationRef.set({
+          'type': 'comment',
+          'postId': postId,
+          'postTitle': postTitle,
+          'senderId': user.uid,
+          'senderName': fullName,
+          'comment': comment,
+          'timestamp': FieldValue.serverTimestamp(),
+          'isRead': false,
+        });
+
+        debugPrint('Notification added for comment');
+      }
+
+      debugPrint('Comment added successfully');
     } catch (e) {
       debugPrint('Error adding comment: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to add comment')),
-      );
     }
   }
 
@@ -929,7 +989,8 @@ class _ViewPostPageState extends State<ViewPostPage> {
                                     ? CupertinoColors.activeBlue
                                     : CupertinoColors.inactiveGray,
                               ),
-                              onPressed: _togglePostLike,
+                              onPressed: () => _togglePostLike(widget.postId,
+                                  _postLikes, widget.title, widget.author),
                             ),
                             Text('${_postLikes.length} Likes'),
                           ],
@@ -1109,7 +1170,8 @@ class _ViewPostPageState extends State<ViewPostPage> {
                             }
                           : () async {
                               if (_commentController.text.isNotEmpty) {
-                                await _addComment(_commentController.text);
+                                await _addComment(_commentController.text,
+                                    widget.postId, widget.title, widget.author);
                               }
                             },
                       child: const Icon(
@@ -1123,6 +1185,106 @@ class _ViewPostPageState extends State<ViewPostPage> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class NotificationsPage extends StatelessWidget {
+  const NotificationsPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Notifications'),
+      ),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('notifications')
+            .doc(userId)
+            .collection('userNotifications')
+            .orderBy('timestamp', descending: true)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final notifications = snapshot.data!.docs;
+
+          if (notifications.isEmpty) {
+            return const Center(child: Text('No notifications.'));
+          }
+
+          return ListView.builder(
+            itemCount: notifications.length,
+            itemBuilder: (context, index) {
+              final notification = notifications[index];
+              final data = notification.data() as Map<String, dynamic>;
+
+              final senderName = data['senderName'] ?? 'Someone';
+
+              return ListTile(
+                title: Text(
+                  data['type'] == 'like'
+                      ? '$senderName liked your post: ${data['postTitle']}'
+                      : '$senderName commented on your post: ${data['postTitle']}',
+                ),
+                subtitle:
+                    data['type'] == 'comment' ? Text(data['comment']) : null,
+                trailing: IconButton(
+                  icon: const Icon(Icons.check),
+                  onPressed: () {
+                    notification.reference.update({'isRead': true});
+                  },
+                ),
+                onTap: () async {
+                  // Fetch the post details from Firestore
+                  final postSnapshot = await FirebaseFirestore.instance
+                      .collection('posts')
+                      .doc(data['postId'])
+                      .get();
+
+                  if (postSnapshot.exists) {
+                    final postData =
+                        postSnapshot.data() as Map<String, dynamic>;
+
+                    // Format the timestamp
+                    final timestamp = postData['timestamp'] as Timestamp;
+                    final formattedTime = DateFormat('MMM dd, yyyy hh:mm a')
+                        .format(timestamp.toDate());
+
+                    // Navigate to the ViewPostPage
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ViewPostPage(
+                          userId: postData['author'] ?? '',
+                          postId: data['postId'],
+                          title: postData['title'] ?? 'No Title',
+                          content: postData['content'] ?? 'No Content',
+                          category: postData['category'] ?? 'No Category',
+                          author: postData['author'] ?? '',
+                          time: formattedTime, // Pass the formatted time
+                          likes: postData['likes'] ?? [],
+                          imageUrls: postData['imageUrls'] ?? [],
+                          tags: postData['tags'] ?? '',
+                        ),
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Post not found.')),
+                    );
+                  }
+                },
+              );
+            },
+          );
+        },
       ),
     );
   }
