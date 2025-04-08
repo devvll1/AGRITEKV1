@@ -98,17 +98,18 @@ class NotificationsPage extends StatelessWidget {
                       const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
                   child: Row(
                     children: [
-                      // Circle indicator for unread notifications
-                      if (!isRead)
-                        Container(
-                          width: 10,
-                          height: 10,
-                          decoration: const BoxDecoration(
-                            color: Colors.blue, // Indicator color
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      if (!isRead) const SizedBox(width: 10), // Spacing
+                      // Sender's profile image
+                      CircleAvatar(
+                        radius: 20,
+                        backgroundImage: (data['profileImageUrl'] != null &&
+                                data['profileImageUrl'].isNotEmpty)
+                            ? NetworkImage(data['profileImageUrl'])
+                            : const AssetImage(
+                                    'assets/images/defaultprofile.png')
+                                as ImageProvider,
+                      ),
+                      const SizedBox(
+                          width: 10), // Spacing between image and text
 
                       // Notification content
                       Expanded(

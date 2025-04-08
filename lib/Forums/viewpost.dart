@@ -1,22 +1,28 @@
+// ignore_for_file: use_build_context_synchronously, must_be_immutable
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:agritek/Forums/editpost.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'dart:io';
 
 class ViewPostPage extends StatefulWidget {
-  final String userId;
-  final String postId;
-  final String title;
-  final String content;
-  final String category;
-  final String author;
-  final String time;
-  final List<dynamic> likes;
-  final List<dynamic> imageUrls; // Added imageUrls
-  final String tags; // Added tags
+  final String userId; // User ID of the post author
+  final String postId; // Post ID
+  final String title; // Post title
+  final String content; // Post content
+  final String category; // Post category
+  final String author; // Author's name
+  final String time; // Time of the post
+  final List<dynamic> likes; // List of likes
+  final List<String> imageUrls; // List of image URLs
+  String tags; // Tags for the post (mutable)
 
-  const ViewPostPage({
+  ViewPostPage({
     super.key,
     required this.userId,
     required this.postId,
@@ -49,6 +55,9 @@ class _ViewPostPageState extends State<ViewPostPage> {
   @override
   void initState() {
     super.initState();
+    _commentController.addListener(() {
+      setState(() {}); // Refresh the UI when the text changes
+    });
     _fetchAuthorProfile(widget.userId);
     _fetchUserProfile();
     _fetchPostLikes();
@@ -57,10 +66,6 @@ class _ViewPostPageState extends State<ViewPostPage> {
     _title = widget.title;
     _content = widget.content;
     _category = widget.category;
-
-    if (widget.author.isNotEmpty) {
-      _fetchAuthorProfile(widget.author);
-    }
   }
 
   @override
@@ -70,129 +75,34 @@ class _ViewPostPageState extends State<ViewPostPage> {
   }
 
   Future<void> _editPost() async {
-    final titleController = TextEditingController(text: _title);
-    final contentController = TextEditingController(text: _content);
-
-    String updatedCategory = _category;
-
-    final updatedPost = await showDialog<Map<String, String>>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Edit Post'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: titleController,
-                  decoration: const InputDecoration(labelText: 'Title'),
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: contentController,
-                  decoration: const InputDecoration(labelText: 'Content'),
-                  maxLines: 4,
-                ),
-                const SizedBox(height: 8),
-                DropdownButtonFormField<String>(
-                  value: updatedCategory,
-                  items: const [
-                    DropdownMenuItem(
-                      value: 'Crop Farming',
-                      child: Text('Crop Farming'),
-                    ),
-                    DropdownMenuItem(
-                      value: 'Livestock',
-                      child: Text('Livestock'),
-                    ),
-                    DropdownMenuItem(
-                      value: 'Aquafisheries',
-                      child: Text('Aquafisheries'),
-                    ),
-                  ],
-                  onChanged: (value) {
-                    if (value != null) {
-                      updatedCategory = value;
-                    }
-                  },
-                  decoration: const InputDecoration(labelText: 'Category'),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(null),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () {
-                final updatedTitle = titleController.text.trim();
-                final updatedContent = contentController.text.trim();
-
-                Navigator.of(context).pop({
-                  'title': updatedTitle,
-                  'content': updatedContent,
-                  'category': updatedCategory,
-                });
-              },
-              child: const Text('Save'),
-            ),
-          ],
-        );
-      },
+    final updatedPost = await Navigator.push<Map<String, dynamic>>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditPostPage(
+          postId: widget.postId,
+          title: _title,
+          content: _content,
+          category: _category,
+          imageUrls: widget.imageUrls, // Pass the current images
+          tags: widget.tags, // Pass the current tags
+        ),
+      ),
     );
 
     if (updatedPost == null) return;
 
-    try {
-      final postRef =
-          FirebaseFirestore.instance.collection('posts').doc(widget.postId);
+    setState(() {
+      _title = updatedPost['title'];
+      _content = updatedPost['content'];
+      _category = updatedPost['category'];
+      widget.imageUrls.clear();
+      widget.imageUrls.addAll(updatedPost['imageUrls']);
+      widget.tags = updatedPost['tags'];
+    });
 
-      await postRef.update({
-        'title': updatedPost['title'],
-        'content': updatedPost['content'],
-        'category': updatedPost['category'],
-      });
-
-      setState(() {
-        _title = updatedPost['title']!;
-        _content = updatedPost['content']!;
-        _category = updatedPost['category']!;
-      });
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Post updated successfully')),
-        );
-      }
-
-      // Navigate back to the ViewPostPage after editing
-      Navigator.of(context).pushReplacement(
-        CupertinoPageRoute(
-          builder: (context) => ViewPostPage(
-            userId: widget.userId,
-            postId: widget.postId,
-            title: _title,
-            content: _content,
-            category: _category,
-            author: widget.author,
-            time: widget.time,
-            likes: widget.likes,
-            imageUrls: widget.imageUrls,
-            tags: widget.tags,
-          ),
-        ),
-      );
-    } catch (e) {
-      debugPrint('Error updating post: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to update post')),
-        );
-      }
-    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Post updated successfully')),
+    );
   }
 
   Future<void> _fetchPostAuthor(String userId) async {
@@ -210,12 +120,8 @@ class _ViewPostPageState extends State<ViewPostPage> {
         setState(() {
           _authorFullName = '$firstName $lastName'; // Full name of the author
         });
-      } else {
-        debugPrint('User document not found for userId: $userId');
       }
-    } catch (e) {
-      debugPrint('Error fetching post author profile: $e');
-    }
+    } catch (e) {}
   }
 
   Future<void> _deletePost() async {
@@ -223,8 +129,6 @@ class _ViewPostPageState extends State<ViewPostPage> {
 
     // Check if the current user is logged in and is the post owner
     final isOwner = currentUser != null && currentUser.uid == widget.author;
-    debugPrint('Current User ID: ${currentUser?.uid}');
-    debugPrint('Post Author ID: ${widget.author}');
 
     if (!isOwner) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -285,155 +189,8 @@ class _ViewPostPageState extends State<ViewPostPage> {
       Navigator.of(context)
           .pop(); // Close the dialog or go back to the previous screen
     } catch (e) {
-      debugPrint('Error deleting post: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Failed to delete post')),
-      );
-    }
-  }
-
-  Future<void> _deleteComment(DocumentReference commentRef) async {
-    final currentUser = FirebaseAuth.instance.currentUser;
-
-    if (currentUser == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('You must be logged in to delete a comment.')),
-      );
-      return;
-    }
-
-    // Show confirmation dialog
-    final confirmation = await showCupertinoDialog<bool>(
-      context: context,
-      builder: (BuildContext context) {
-        return CupertinoAlertDialog(
-          title: const Text('Delete Comment'),
-          content: const Text(
-              'Are you sure you want to delete this comment? This action cannot be undone.'),
-          actions: [
-            CupertinoDialogAction(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Cancel'),
-            ),
-            CupertinoDialogAction(
-              onPressed: () => Navigator.of(context).pop(true),
-              isDestructiveAction: true,
-              child: const Text('Delete'),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (confirmation != true) return;
-
-    try {
-      final commentSnapshot = await commentRef.get();
-
-      if (commentSnapshot.exists) {
-        final commentData = commentSnapshot.data() as Map<String, dynamic>;
-
-        // Allow only the comment owner to delete
-        if (commentData['userId'] == currentUser.uid) {
-          await commentRef.delete();
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Comment deleted successfully')),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-                content:
-                    Text('You are not authorized to delete this comment.')),
-          );
-        }
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Comment not found.')),
-        );
-      }
-    } catch (e) {
-      debugPrint('Error deleting comment: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to delete comment')),
-      );
-    }
-  }
-
-  Future<void> _editComment(
-      DocumentReference commentRef, String oldCommentText) async {
-    final currentUser = FirebaseAuth.instance.currentUser;
-
-    if (currentUser == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('You must be logged in to edit a comment.')),
-      );
-      return;
-    }
-
-    // Show dialog to edit the comment
-    final TextEditingController editController =
-        TextEditingController(text: oldCommentText);
-
-    final newComment = await showDialog<String>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Edit Comment'),
-          content: TextField(
-            controller: editController,
-            decoration: const InputDecoration(labelText: 'Edit your comment'),
-            maxLines: 3,
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(null),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () {
-                final editedText = editController.text.trim();
-                Navigator.of(context).pop(editedText);
-              },
-              child: const Text('Save'),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (newComment == null ||
-        newComment.isEmpty ||
-        newComment == oldCommentText) return;
-
-    try {
-      final commentSnapshot = await commentRef.get();
-
-      if (commentSnapshot.exists) {
-        final commentData = commentSnapshot.data() as Map<String, dynamic>;
-
-        // Check if the current user is the author of the comment
-        if (commentData['userId'] == currentUser.uid) {
-          await commentRef.update({'text': newComment});
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Comment edited successfully')),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-                content: Text('You are not authorized to edit this comment.')),
-          );
-        }
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Comment not found.')),
-        );
-      }
-    } catch (e) {
-      debugPrint('Error editing comment: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to edit comment')),
       );
     }
   }
@@ -453,35 +210,7 @@ class _ViewPostPageState extends State<ViewPostPage> {
           _postImageUrl = postImageUrl.isNotEmpty ? postImageUrl : null;
         });
       }
-    } catch (e) {
-      debugPrint('Error fetching post image: $e');
-    }
-  }
-
-  void _showImagePopup(BuildContext context, String imageUrl) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return GestureDetector(
-          onTap: () => Navigator.of(context).pop(),
-          child: Dialog(
-            backgroundColor: Colors.transparent,
-            insetPadding: const EdgeInsets.all(10),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Image.network(
-                imageUrl,
-                fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) => const Image(
-                  image: AssetImage('assets/images/defaultimg.png'),
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
+    } catch (e) {}
   }
 
   Future<void> _fetchAuthorProfile(String userId) async {
@@ -494,27 +223,19 @@ class _ViewPostPageState extends State<ViewPostPage> {
 
       if (userDoc.exists) {
         final data = userDoc.data();
-        print(
-            "Fetched Author Data: $data"); // Debugging line to check fetched data.
-        final profileImageUrl = data?['profileImageUrl'] ??
-            ''; // Get profileImageUrl or empty string
+        final profileImageUrl = data?['profileImageUrl'] ?? '';
 
         setState(() {
-          // If the profile image URL is not empty, use it. Otherwise, use the default profile image.
           _authorProfileImageUrl = profileImageUrl.isNotEmpty
               ? profileImageUrl
-              : 'assets/images/defaultprofile.png'; // Fallback to default image if empty
+              : 'assets/images/defaultprofile.png';
         });
       } else {
-        debugPrint('User document not found');
-        // If no user document is found, set the default profile image
         setState(() {
           _authorProfileImageUrl = 'assets/images/defaultprofile.png';
         });
       }
     } catch (e) {
-      debugPrint('Error fetching author profile: $e');
-      // In case of an error, set the default profile image
       setState(() {
         _authorProfileImageUrl = 'assets/images/defaultprofile.png';
       });
@@ -536,9 +257,7 @@ class _ViewPostPageState extends State<ViewPostPage> {
           _userProfileImageUrl = userDoc.data()?['profileImageUrl'] ?? '';
         });
       }
-    } catch (e) {
-      debugPrint('Error fetching user profile: $e');
-    }
+    } catch (e) {}
   }
 
   Future<void> _fetchPostLikes() async {
@@ -555,9 +274,7 @@ class _ViewPostPageState extends State<ViewPostPage> {
               _postLikes.contains(FirebaseAuth.instance.currentUser?.uid);
         });
       }
-    } catch (e) {
-      debugPrint('Error fetching post likes: $e');
-    }
+    } catch (e) {}
   }
 
   Future<void> _togglePostLike(String postId, List<dynamic> currentLikes,
@@ -576,250 +293,420 @@ class _ViewPostPageState extends State<ViewPostPage> {
 
     try {
       if (currentLikes.contains(userId)) {
-        // Unlike the post
         await postDoc.update({
           'likes': FieldValue.arrayRemove([userId]),
         });
       } else {
-        // Like the post
         await postDoc.update({
           'likes': FieldValue.arrayUnion([userId]),
         });
-
-        // Fetch the user's name
-        final userDoc = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(userId)
-            .get();
-
-        if (!userDoc.exists) {
-          debugPrint('User document does not exist');
-          return;
-        }
-
-        final userData = userDoc.data()!;
-        final firstName = userData['firstName'] ?? 'Unknown';
-        final lastName = userData['lastName'] ?? 'User';
-        final fullName = '$firstName $lastName';
-
-        // Add a notification for the post author
-        if (postAuthorId != userId) {
-          final notificationRef = FirebaseFirestore.instance
-              .collection('notifications')
-              .doc(postAuthorId)
-              .collection('userNotifications')
-              .doc();
-
-          await notificationRef.set({
-            'type': 'like',
-            'postId': postId,
-            'postTitle': postTitle,
-            'senderId': userId,
-            'senderName': fullName,
-            'timestamp': FieldValue.serverTimestamp(),
-            'isRead': false,
-          });
-
-          debugPrint('Notification added for like');
-        }
       }
-    } catch (e) {
-      debugPrint('Error toggling like: $e');
-    }
+    } catch (e) {}
   }
 
-  Future<void> _addComment(String comment, String postId, String postTitle,
-      String postAuthorId) async {
+  Future<void> _addComment(
+      String comment, String postId, String postTitle, String postAuthorId,
+      {String? imageUrl}) async {
     final user = FirebaseAuth.instance.currentUser;
 
     if (user == null) {
-      debugPrint('User is not logged in');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('You must be logged in to add a comment.')),
+      );
       return;
     }
 
-    if (comment.isEmpty) {
-      debugPrint('Comment is empty');
+    if (comment.isEmpty && (imageUrl == null || imageUrl.isEmpty)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Comment cannot be empty.')),
+      );
       return;
     }
 
     try {
-      // Fetch the current user's details
       final userDoc = await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
           .get();
 
       if (!userDoc.exists) {
-        debugPrint('User document does not exist');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('User not found.')),
+        );
         return;
       }
 
       final userData = userDoc.data()!;
-      final firstName = userData['firstName'] ?? 'Unknown';
-      final lastName = userData['lastName'] ?? 'User';
-      final fullName = '$firstName $lastName';
+      final fullName =
+          '${userData['firstName'] ?? 'Unknown'} ${userData['lastName'] ?? 'User'}';
 
-      // Prepare the comment data
       final commentData = {
         'text': comment,
+        'imageUrl': imageUrl ?? '',
         'timestamp': FieldValue.serverTimestamp(),
         'author': fullName,
         'userId': user.uid,
         'profileImageUrl':
             userData['profileImageUrl'] ?? 'assets/images/defaultprofile.png',
+        'likes': [],
       };
 
-      // Add the comment to Firestore
       final postDoc =
           FirebaseFirestore.instance.collection('posts').doc(postId);
       await postDoc.collection('comments').add(commentData);
 
-      // Add a notification for the post author
-      if (postAuthorId != user.uid) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Comment added successfully')),
+      );
+
+      _commentController.clear();
+      FocusScope.of(context).unfocus();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to add comment')),
+      );
+    }
+  }
+
+  Future<void> _editComment(
+      DocumentReference commentRef, String currentText) async {
+    final TextEditingController editController =
+        TextEditingController(text: currentText);
+
+    final updatedComment = await showDialog<String>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Edit Comment'),
+          content: TextField(
+            controller: editController,
+            decoration: const InputDecoration(labelText: 'Edit your comment'),
+            maxLines: 3,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(null),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () =>
+                  Navigator.of(context).pop(editController.text.trim()),
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (updatedComment == null || updatedComment.isEmpty) return;
+
+    try {
+      await commentRef.update({'text': updatedComment});
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Comment updated successfully')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to update comment')),
+      );
+    }
+  }
+
+  Future<void> _deleteComment(DocumentReference commentRef) async {
+    final confirmation = await showCupertinoDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return CupertinoAlertDialog(
+          title: const Text('Delete Comment'),
+          content: const Text('Are you sure you want to delete this comment?'),
+          actions: [
+            CupertinoDialogAction(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            CupertinoDialogAction(
+              onPressed: () => Navigator.of(context).pop(true),
+              isDestructiveAction: true,
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmation != true) return;
+
+    try {
+      await commentRef.delete();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Comment deleted successfully')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to delete comment')),
+      );
+    }
+  }
+
+  Future<void> _toggleCommentLike(
+      DocumentReference commentRef, List<String> currentLikes) async {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('You must be logged in to like comments.')),
+      );
+      return;
+    }
+
+    final userId = user.uid;
+
+    try {
+      if (currentLikes.contains(userId)) {
+        await commentRef.update({
+          'likes': FieldValue.arrayRemove([userId]),
+        });
+      } else {
+        await commentRef.update({
+          'likes': FieldValue.arrayUnion([userId]),
+        });
+
+        // Fetch the comment's author ID
+        final commentSnapshot = await commentRef.get();
+        final commentData = commentSnapshot.data() as Map<String, dynamic>?;
+        final commentAuthorId = commentData?['userId'];
+
+        // Notify the comment's author
+        if (commentAuthorId != null && commentAuthorId != user.uid) {
+          final userDoc = await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .get();
+
+          final userData = userDoc.data()!;
+          final userName =
+              '${userData['firstName'] ?? 'Unknown'} ${userData['lastName'] ?? 'User'}';
+
+          final notificationRef = FirebaseFirestore.instance
+              .collection('notifications')
+              .doc(commentAuthorId)
+              .collection('userNotifications')
+              .doc();
+
+          await notificationRef.set({
+            'type': 'like',
+            'postId': widget.postId,
+            'postTitle': widget.title,
+            'senderId': user.uid,
+            'senderName': userName,
+            'timestamp': FieldValue.serverTimestamp(),
+            'isRead': false,
+          });
+        }
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to like comment')),
+      );
+    }
+  }
+
+  Future<void> _replyToComment(DocumentReference commentRef) async {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('You must be logged in to reply.')),
+      );
+      return;
+    }
+
+    final userDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .get();
+
+    if (!userDoc.exists) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to fetch user details.')),
+      );
+      return;
+    }
+
+    final userData = userDoc.data()!;
+    final userName =
+        '${userData['firstName'] ?? 'Unknown'} ${userData['lastName'] ?? 'User'}';
+    final userProfileImageUrl =
+        userData['profileImageUrl'] ?? 'assets/images/defaultprofile.png';
+
+    final TextEditingController replyController = TextEditingController();
+    String? imageUrl;
+
+    final reply = await showDialog<Map<String, String>>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Reply to Comment'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: replyController,
+                decoration: const InputDecoration(labelText: 'Reply'),
+              ),
+              const SizedBox(height: 8),
+              CupertinoButton(
+                child: const Text('Attach Image'),
+                onPressed: () async {
+                  // Implement image picker logic here
+                  // Set `imageUrl` to the uploaded image's URL
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(null),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop({
+                'text': replyController.text.trim(),
+                'imageUrl': imageUrl ?? '',
+              }),
+              child: const Text('Reply'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (reply == null || reply['text']!.isEmpty) return;
+
+    try {
+      // Add the reply to Firestore
+      await commentRef.collection('replies').add({
+        'text': reply['text'],
+        'imageUrl': reply['imageUrl'],
+        'timestamp': FieldValue.serverTimestamp(),
+        'author': userName,
+        'profileImageUrl': userProfileImageUrl,
+        'userId': user.uid,
+      });
+
+      // Fetch the comment's author ID
+      final commentSnapshot = await commentRef.get();
+      final commentData = commentSnapshot.data() as Map<String, dynamic>?;
+      final commentAuthorId = commentData?['userId'];
+
+      // Notify the comment's author
+      if (commentAuthorId != null && commentAuthorId != user.uid) {
         final notificationRef = FirebaseFirestore.instance
             .collection('notifications')
-            .doc(postAuthorId)
+            .doc(commentAuthorId)
             .collection('userNotifications')
             .doc();
 
         await notificationRef.set({
-          'type': 'comment',
-          'postId': postId,
-          'postTitle': postTitle,
+          'type': 'reply',
+          'postId': widget.postId,
+          'postTitle': widget.title,
           'senderId': user.uid,
-          'senderName': fullName,
-          'comment': comment,
+          'senderName': userName,
+          'comment': reply['text'],
           'timestamp': FieldValue.serverTimestamp(),
           'isRead': false,
         });
-
-        debugPrint('Notification added for comment');
       }
 
-      debugPrint('Comment added successfully');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Reply added successfully')),
+      );
     } catch (e) {
-      debugPrint('Error adding comment: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to reply to comment')),
+      );
     }
   }
 
   void _showFullScreenImage(String imageUrl) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => Scaffold(
-          appBar: AppBar(),
-          body: Center(
-            child: Image.network(imageUrl),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildImageGrid(List<dynamic> imageUrls) {
-    if (imageUrls.isEmpty) return const SizedBox.shrink();
-
-    final imageCount = imageUrls.length;
-
-    if (imageCount == 1) {
-      // Single full-width image
-      return GestureDetector(
-        onTap: () => _showFullScreenImage(imageUrls[0]),
-        child: Container(
-          width: double.infinity,
-          height: 200,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-            image: DecorationImage(
-              image: NetworkImage(imageUrls[0]),
-              fit: BoxFit.cover,
-            ),
-          ),
-        ),
-      );
-    } else if (imageCount == 2) {
-      // Two images side by side
-      return Row(
-        children: imageUrls.take(2).map((imageUrl) {
-          return Expanded(
-            child: GestureDetector(
-              onTap: () => _showFullScreenImage(imageUrl),
-              child: Container(
-                height: 150,
-                margin: const EdgeInsets.only(right: 4),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  image: DecorationImage(
-                    image: NetworkImage(imageUrl),
-                    fit: BoxFit.cover,
-                  ),
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return GestureDetector(
+          onTap: () => Navigator.of(context).pop(),
+          child: Dialog(
+            insetPadding: EdgeInsets.zero,
+            backgroundColor: Colors.black,
+            child: InteractiveViewer(
+              child: Image.network(
+                imageUrl,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) => const Icon(
+                  Icons.broken_image,
+                  color: Colors.grey,
+                  size: 50,
                 ),
               ),
             ),
-          );
-        }).toList(),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showImagePopup(BuildContext context, String imageUrl) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          insetPadding: EdgeInsets.zero,
+          backgroundColor: Colors.transparent,
+          child: GestureDetector(
+            onTap: () => Navigator.of(context).pop(),
+            child: Image.network(
+              imageUrl,
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) => const Icon(
+                Icons.broken_image,
+                color: Colors.grey,
+                size: 50,
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<String?> _pickAndUploadImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+
+    if (pickedFile == null) {
+      return null; // User canceled the picker
+    }
+
+    try {
+      final file = File(pickedFile.path);
+      final fileName = DateTime.now().millisecondsSinceEpoch.toString();
+      final storageRef = FirebaseStorage.instance
+          .ref()
+          .child('comment_images')
+          .child('$fileName.jpg');
+
+      final uploadTask = storageRef.putFile(file);
+      final snapshot = await uploadTask.whenComplete(() => null);
+      final downloadUrl = await snapshot.ref.getDownloadURL();
+
+      return downloadUrl;
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to upload image')),
       );
-    } else {
-      // Three or more images
-      return Row(
-        children: List.generate(
-          3,
-          (index) {
-            if (index == 2 && imageCount > 3) {
-              // Show "+X" overlay for additional images
-              return Stack(
-                children: [
-                  GestureDetector(
-                    onTap: () => _showFullScreenImage(imageUrls[index]),
-                    child: Container(
-                      width: 100,
-                      height: 100,
-                      margin: const EdgeInsets.only(right: 4),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        image: DecorationImage(
-                          image: NetworkImage(imageUrls[index]),
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
-                  ),
-                  Positioned.fill(
-                    child: Container(
-                      alignment: Alignment.center,
-                      color: Colors.black.withOpacity(0.5),
-                      child: Text(
-                        '+${imageCount - 3}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              );
-            } else {
-              return GestureDetector(
-                onTap: () => _showFullScreenImage(imageUrls[index]),
-                child: Container(
-                  width: 100,
-                  height: 100,
-                  margin: const EdgeInsets.only(right: 4),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    image: DecorationImage(
-                      image: NetworkImage(imageUrls[index]),
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                ),
-              );
-            }
-          },
-        ),
-      );
+      return null;
     }
   }
 
@@ -827,8 +714,6 @@ class _ViewPostPageState extends State<ViewPostPage> {
   Widget build(BuildContext context) {
     final currentUser = FirebaseAuth.instance.currentUser;
     final isOwner = currentUser != null && currentUser.uid == widget.author;
-    debugPrint('Current User ID: ${currentUser?.uid}');
-    debugPrint('Post Author ID: ${widget.author}');
 
     return DefaultTextStyle(
       style: const TextStyle(
@@ -879,8 +764,7 @@ class _ViewPostPageState extends State<ViewPostPage> {
                                       _authorProfileImageUrl!.isNotEmpty
                                   ? NetworkImage(_authorProfileImageUrl!)
                                   : const AssetImage(
-                                          'assets/images/defaultprofile.png')
-                                      as ImageProvider,
+                                      'assets/images/defaultprofile.png'),
                             ),
                             const SizedBox(width: 8),
                             Column(
@@ -951,9 +835,12 @@ class _ViewPostPageState extends State<ViewPostPage> {
                         const SizedBox(height: 8),
                         // Post Date
                         Text(
-                          DateFormat.yMMMd().format(
-                            DateFormat('MMM d, yyyy h:mm a').parse(widget.time),
-                          ),
+                          widget.time.isNotEmpty
+                              ? DateFormat.yMMMd().format(
+                                  DateFormat('MMM d, yyyy h:mm a')
+                                      .parse(widget.time),
+                                )
+                              : 'Unknown Date',
                           style: const TextStyle(
                             fontSize: 12,
                             color: Colors.grey,
@@ -976,6 +863,39 @@ class _ViewPostPageState extends State<ViewPostPage> {
                             fontSize: 14,
                           ),
                         ),
+                        // Uploaded Images Section
+                        if (widget.imageUrls.isNotEmpty) ...[
+                          const SizedBox(height: 16),
+                          Column(
+                            children: widget.imageUrls.map((imageUrl) {
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 16.0),
+                                child: GestureDetector(
+                                  onTap: () => _showFullScreenImage(imageUrl),
+                                  child: Image.network(
+                                    imageUrl,
+                                    fit: BoxFit
+                                        .contain, // Show the image in its original size
+                                    loadingBuilder:
+                                        (context, child, loadingProgress) {
+                                      if (loadingProgress == null) return child;
+                                      return const Center(
+                                        child: CircularProgressIndicator(),
+                                      );
+                                    },
+                                    errorBuilder:
+                                        (context, error, stackTrace) =>
+                                            const Icon(
+                                      Icons.broken_image,
+                                      color: Colors.grey,
+                                      size: 50,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ],
                         const Divider(),
                         // Likes Section
                         Row(
@@ -1013,19 +933,14 @@ class _ViewPostPageState extends State<ViewPostPage> {
                               .orderBy('timestamp', descending: true)
                               .snapshots(),
                           builder: (context, snapshot) {
-                            if (!snapshot.hasData) {
-                              return const Center(
-                                child: CupertinoActivityIndicator(),
-                              );
-                            }
-
-                            final comments = snapshot.data!.docs;
-
-                            if (comments.isEmpty) {
+                            if (!snapshot.hasData ||
+                                snapshot.data!.docs.isEmpty) {
                               return const Center(
                                 child: Text('No comments yet'),
                               );
                             }
+
+                            final comments = snapshot.data!.docs;
 
                             return ListView.builder(
                               shrinkWrap: true,
@@ -1037,6 +952,9 @@ class _ViewPostPageState extends State<ViewPostPage> {
                                 final author =
                                     commentData['author'] ?? 'Anonymous';
                                 final text = commentData['text'] ?? '';
+                                final imageUrl = commentData['imageUrl'] ?? '';
+                                final likes = List<String>.from(
+                                    commentData['likes'] ?? []);
                                 final timestamp =
                                     commentData['timestamp'] as Timestamp?;
                                 final time = timestamp != null
@@ -1047,86 +965,442 @@ class _ViewPostPageState extends State<ViewPostPage> {
                                 return Padding(
                                   padding:
                                       const EdgeInsets.symmetric(vertical: 4.0),
-                                  child: Row(
+                                  child: Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      CircleAvatar(
-                                        radius: 16,
-                                        backgroundImage: NetworkImage(
-                                          commentData['profileImageUrl'] ??
-                                              'assets/images/defaultprofile.png',
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Container(
-                                          padding: const EdgeInsets.all(8.0),
-                                          decoration: BoxDecoration(
-                                            color: CupertinoColors.systemGrey5,
-                                            borderRadius:
-                                                BorderRadius.circular(8),
+                                      Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          CircleAvatar(
+                                            radius: 16,
+                                            backgroundImage: (commentData[
+                                                            'profileImageUrl'] !=
+                                                        null &&
+                                                    commentData[
+                                                            'profileImageUrl']
+                                                        .isNotEmpty &&
+                                                    Uri.tryParse(commentData[
+                                                                'profileImageUrl'])
+                                                            ?.hasAbsolutePath ==
+                                                        true)
+                                                ? NetworkImage(commentData[
+                                                    'profileImageUrl'])
+                                                : const AssetImage(
+                                                        'assets/images/defaultprofile.png')
+                                                    as ImageProvider,
                                           ),
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                author,
-                                                style: const TextStyle(
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 14,
-                                                ),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Container(
+                                              padding:
+                                                  const EdgeInsets.all(8.0),
+                                              decoration: BoxDecoration(
+                                                color: const Color.fromARGB(
+                                                    255, 255, 255, 255),
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
                                               ),
-                                              const SizedBox(height: 4),
-                                              Text(text),
-                                              const SizedBox(height: 4),
-                                              Text(
-                                                time,
-                                                style: const TextStyle(
-                                                  fontSize: 12,
-                                                  color: Colors.grey,
-                                                ),
-                                              ),
-                                              const SizedBox(height: 8),
-                                              // Add delete button for the comment
-                                              if (currentUser?.uid ==
-                                                  commentData[
-                                                      'userId']) // Check if current user is the author
-                                                Row(
-                                                  children: [
-                                                    GestureDetector(
-                                                      onTap: () => _editComment(
-                                                          comments[index]
-                                                              .reference,
-                                                          commentData['text']),
-                                                      child: const Icon(
-                                                        CupertinoIcons.pencil,
-                                                        color: CupertinoColors
-                                                            .activeBlue,
-                                                        size: 18,
-                                                      ),
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    author,
+                                                    style: const TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      fontSize: 14,
                                                     ),
-                                                    const SizedBox(
-                                                        width:
-                                                            8), // Spacing between icons
+                                                  ),
+                                                  const SizedBox(height: 4),
+                                                  if (text.isNotEmpty)
+                                                    Text(text),
+                                                  if (imageUrl.isNotEmpty)
                                                     GestureDetector(
                                                       onTap: () =>
-                                                          _deleteComment(
-                                                              comments[index]
-                                                                  .reference),
-                                                      child: const Icon(
-                                                        CupertinoIcons.delete,
-                                                        color: CupertinoColors
-                                                            .destructiveRed,
-                                                        size: 18,
+                                                          _showFullScreenImage(
+                                                              imageUrl),
+                                                      child: Image.network(
+                                                        imageUrl,
+                                                        height: 150,
+                                                        fit: BoxFit.cover,
+                                                        loadingBuilder: (context,
+                                                            child,
+                                                            loadingProgress) {
+                                                          if (loadingProgress ==
+                                                              null)
+                                                            return child;
+                                                          return const Center(
+                                                              child:
+                                                                  CircularProgressIndicator());
+                                                        },
+                                                        errorBuilder: (context,
+                                                                error,
+                                                                stackTrace) =>
+                                                            const Icon(
+                                                          Icons.broken_image,
+                                                          color: Colors.grey,
+                                                          size: 50,
+                                                        ),
                                                       ),
                                                     ),
-                                                  ],
-                                                ),
-                                            ],
+                                                  const SizedBox(height: 4),
+                                                  Text(
+                                                    time,
+                                                    style: const TextStyle(
+                                                      fontSize: 12,
+                                                      color: Colors.grey,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 8),
+                                                  Row(
+                                                    children: [
+                                                      GestureDetector(
+                                                        onTap: () =>
+                                                            _toggleCommentLike(
+                                                                comments[index]
+                                                                    .reference,
+                                                                likes),
+                                                        child: Icon(
+                                                          likes.contains(
+                                                                  FirebaseAuth
+                                                                      .instance
+                                                                      .currentUser
+                                                                      ?.uid)
+                                                              ? CupertinoIcons
+                                                                  .heart_fill
+                                                              : CupertinoIcons
+                                                                  .heart,
+                                                          color: likes.contains(
+                                                                  FirebaseAuth
+                                                                      .instance
+                                                                      .currentUser
+                                                                      ?.uid)
+                                                              ? CupertinoColors
+                                                                  .systemRed
+                                                              : CupertinoColors
+                                                                  .inactiveGray,
+                                                          size: 18,
+                                                        ),
+                                                      ),
+                                                      const SizedBox(width: 4),
+                                                      Text('${likes.length}'),
+                                                      const SizedBox(width: 16),
+                                                      GestureDetector(
+                                                        onTap: () =>
+                                                            _replyToComment(
+                                                                comments[index]
+                                                                    .reference),
+                                                        child: const Icon(
+                                                          CupertinoIcons.reply,
+                                                          color: CupertinoColors
+                                                              .activeBlue,
+                                                          size: 18,
+                                                        ),
+                                                      ),
+                                                      if (FirebaseAuth
+                                                              .instance
+                                                              .currentUser
+                                                              ?.uid ==
+                                                          commentData[
+                                                              'userId']) ...[
+                                                        const SizedBox(
+                                                            width: 16),
+                                                        GestureDetector(
+                                                          onTap: () =>
+                                                              _editComment(
+                                                                  comments[
+                                                                          index]
+                                                                      .reference,
+                                                                  commentData[
+                                                                      'text']),
+                                                          child: const Icon(
+                                                            CupertinoIcons
+                                                                .pencil,
+                                                            color:
+                                                                CupertinoColors
+                                                                    .activeBlue,
+                                                            size: 18,
+                                                          ),
+                                                        ),
+                                                        const SizedBox(
+                                                            width: 8),
+                                                        GestureDetector(
+                                                          onTap: () =>
+                                                              _deleteComment(
+                                                                  comments[
+                                                                          index]
+                                                                      .reference),
+                                                          child: const Icon(
+                                                            CupertinoIcons
+                                                                .delete,
+                                                            color: CupertinoColors
+                                                                .destructiveRed,
+                                                            size: 18,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ],
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
                                           ),
-                                        ),
+                                        ],
+                                      ),
+                                      // Replies Section
+                                      StreamBuilder<QuerySnapshot>(
+                                        stream: comments[index]
+                                            .reference
+                                            .collection('replies')
+                                            .orderBy('timestamp',
+                                                descending: true)
+                                            .snapshots(),
+                                        builder: (context, replySnapshot) {
+                                          if (!replySnapshot.hasData ||
+                                              replySnapshot
+                                                  .data!.docs.isEmpty) {
+                                            return const SizedBox.shrink();
+                                          }
+
+                                          final replies =
+                                              replySnapshot.data!.docs;
+
+                                          return Padding(
+                                            padding: const EdgeInsets.only(
+                                                left: 40.0, top: 8.0),
+                                            child: Column(
+                                              children: replies.map((reply) {
+                                                final replyData = reply.data()
+                                                    as Map<String, dynamic>;
+                                                final replyAuthor =
+                                                    replyData['author'] ??
+                                                        'Anonymous';
+                                                final replyText =
+                                                    replyData['text'] ?? '';
+                                                final replyImageUrl =
+                                                    replyData['imageUrl'] ?? '';
+                                                final replyProfileImageUrl =
+                                                    replyData[
+                                                            'profileImageUrl'] ??
+                                                        '';
+                                                final replyLikes =
+                                                    List<String>.from(
+                                                        replyData['likes'] ??
+                                                            []);
+                                                final replyTimestamp =
+                                                    replyData['timestamp']
+                                                        as Timestamp?;
+                                                final replyTime = replyTimestamp !=
+                                                        null
+                                                    ? DateFormat(
+                                                            'MMM d, yyyy h:mm a')
+                                                        .format(replyTimestamp
+                                                            .toDate())
+                                                    : 'Just now';
+
+                                                return Padding(
+                                                  padding:
+                                                      const EdgeInsets.only(
+                                                          bottom: 8.0),
+                                                  child: Row(
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .start,
+                                                    children: [
+                                                      CircleAvatar(
+                                                        radius: 12,
+                                                        backgroundImage: (replyProfileImageUrl
+                                                                    .isNotEmpty &&
+                                                                Uri.tryParse(
+                                                                            replyProfileImageUrl)
+                                                                        ?.hasAbsolutePath ==
+                                                                    true)
+                                                            ? NetworkImage(
+                                                                replyProfileImageUrl)
+                                                            : const AssetImage(
+                                                                    'assets/images/defaultprofile.png')
+                                                                as ImageProvider,
+                                                      ),
+                                                      const SizedBox(width: 8),
+                                                      Expanded(
+                                                        child: Container(
+                                                          padding:
+                                                              const EdgeInsets
+                                                                  .all(8.0),
+                                                          decoration:
+                                                              BoxDecoration(
+                                                            color: Colors.white,
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        8),
+                                                            boxShadow: [
+                                                              BoxShadow(
+                                                                color: Colors
+                                                                    .grey
+                                                                    .withOpacity(
+                                                                        0.2),
+                                                                spreadRadius: 1,
+                                                                blurRadius: 3,
+                                                                offset:
+                                                                    const Offset(
+                                                                        0, 1),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                          child: Column(
+                                                            crossAxisAlignment:
+                                                                CrossAxisAlignment
+                                                                    .start,
+                                                            children: [
+                                                              Text(
+                                                                replyAuthor,
+                                                                style:
+                                                                    const TextStyle(
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .bold,
+                                                                  fontSize: 12,
+                                                                ),
+                                                              ),
+                                                              const SizedBox(
+                                                                  height: 4),
+                                                              if (replyText
+                                                                  .isNotEmpty)
+                                                                Text(replyText),
+                                                              if (replyImageUrl
+                                                                  .isNotEmpty)
+                                                                GestureDetector(
+                                                                  onTap: () =>
+                                                                      _showFullScreenImage(
+                                                                          replyImageUrl),
+                                                                  child: Image
+                                                                      .network(
+                                                                    replyImageUrl,
+                                                                    height: 100,
+                                                                    fit: BoxFit
+                                                                        .cover,
+                                                                  ),
+                                                                ),
+                                                              const SizedBox(
+                                                                  height: 4),
+                                                              Text(
+                                                                replyTime,
+                                                                style:
+                                                                    const TextStyle(
+                                                                  fontSize: 10,
+                                                                  color: Colors
+                                                                      .grey,
+                                                                ),
+                                                              ),
+                                                              const SizedBox(
+                                                                  height: 8),
+                                                              Row(
+                                                                children: [
+                                                                  GestureDetector(
+                                                                    onTap: () =>
+                                                                        _toggleCommentLike(
+                                                                            reply.reference,
+                                                                            replyLikes),
+                                                                    child: Icon(
+                                                                      replyLikes.contains(FirebaseAuth
+                                                                              .instance
+                                                                              .currentUser
+                                                                              ?.uid)
+                                                                          ? CupertinoIcons
+                                                                              .heart_fill
+                                                                          : CupertinoIcons
+                                                                              .heart,
+                                                                      color: replyLikes.contains(FirebaseAuth
+                                                                              .instance
+                                                                              .currentUser
+                                                                              ?.uid)
+                                                                          ? CupertinoColors
+                                                                              .systemRed
+                                                                          : CupertinoColors
+                                                                              .inactiveGray,
+                                                                      size: 18,
+                                                                    ),
+                                                                  ),
+                                                                  const SizedBox(
+                                                                      width: 4),
+                                                                  Text(
+                                                                      '${replyLikes.length}'),
+                                                                  const SizedBox(
+                                                                      width:
+                                                                          16),
+                                                                  GestureDetector(
+                                                                    onTap: () =>
+                                                                        _replyToComment(
+                                                                            reply.reference),
+                                                                    child:
+                                                                        const Icon(
+                                                                      CupertinoIcons
+                                                                          .reply,
+                                                                      color: CupertinoColors
+                                                                          .activeBlue,
+                                                                      size: 18,
+                                                                    ),
+                                                                  ),
+                                                                  if (FirebaseAuth
+                                                                          .instance
+                                                                          .currentUser
+                                                                          ?.uid ==
+                                                                      replyData[
+                                                                          'userId']) ...[
+                                                                    const SizedBox(
+                                                                        width:
+                                                                            16),
+                                                                    GestureDetector(
+                                                                      onTap: () => _editComment(
+                                                                          reply
+                                                                              .reference,
+                                                                          replyData[
+                                                                              'text']),
+                                                                      child:
+                                                                          const Icon(
+                                                                        CupertinoIcons
+                                                                            .pencil,
+                                                                        color: CupertinoColors
+                                                                            .activeBlue,
+                                                                        size:
+                                                                            18,
+                                                                      ),
+                                                                    ),
+                                                                    const SizedBox(
+                                                                        width:
+                                                                            8),
+                                                                    GestureDetector(
+                                                                      onTap: () =>
+                                                                          _deleteComment(
+                                                                              reply.reference),
+                                                                      child:
+                                                                          const Icon(
+                                                                        CupertinoIcons
+                                                                            .delete,
+                                                                        color: CupertinoColors
+                                                                            .destructiveRed,
+                                                                        size:
+                                                                            18,
+                                                                      ),
+                                                                    ),
+                                                                  ],
+                                                                ],
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                );
+                                              }).toList(),
+                                            ),
+                                          );
+                                        },
                                       ),
                                     ],
                                   ),
@@ -1159,20 +1433,38 @@ class _ViewPostPageState extends State<ViewPostPage> {
                     CupertinoButton(
                       padding: const EdgeInsets.all(0),
                       color: CupertinoColors.activeBlue,
-                      onPressed: FirebaseAuth.instance.currentUser == null
-                          ? () {
-                              // Show login prompt
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Please log in to comment'),
-                                ),
-                              );
-                            }
+                      onPressed: () async {
+                        final imageUrl = await _pickAndUploadImage();
+                        if (imageUrl != null) {
+                          await _addComment(
+                            _commentController.text,
+                            widget.postId,
+                            widget.title,
+                            widget.author,
+                            imageUrl: imageUrl,
+                          );
+                        }
+                      },
+                      child: const Icon(
+                        CupertinoIcons.photo,
+                        color: CupertinoColors.white,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    CupertinoButton(
+                      padding: const EdgeInsets.all(0),
+                      color: CupertinoColors.activeBlue,
+                      onPressed: _commentController.text.trim().isEmpty
+                          ? null
                           : () async {
-                              if (_commentController.text.isNotEmpty) {
-                                await _addComment(_commentController.text,
-                                    widget.postId, widget.title, widget.author);
-                              }
+                              await _addComment(
+                                _commentController.text.trim(),
+                                widget.postId,
+                                widget.title,
+                                widget.author,
+                              );
+                              _commentController
+                                  .clear(); // Clear the text field after sending
                             },
                       child: const Icon(
                         CupertinoIcons.paperplane_fill,
@@ -1253,11 +1545,12 @@ class NotificationsPage extends StatelessWidget {
                         postSnapshot.data() as Map<String, dynamic>;
 
                     // Format the timestamp
-                    final timestamp = postData['timestamp'] as Timestamp;
-                    final formattedTime = DateFormat('MMM dd, yyyy hh:mm a')
-                        .format(timestamp.toDate());
+                    final timestamp = data['timestamp'] as Timestamp?;
+                    final formattedTime = timestamp != null
+                        ? DateFormat('MMM d, yyyy h:mm a')
+                            .format(timestamp.toDate())
+                        : 'Unknown time';
 
-                    // Navigate to the ViewPostPage
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -1268,7 +1561,7 @@ class NotificationsPage extends StatelessWidget {
                           content: postData['content'] ?? 'No Content',
                           category: postData['category'] ?? 'No Category',
                           author: postData['author'] ?? '',
-                          time: formattedTime, // Pass the formatted time
+                          time: formattedTime,
                           likes: postData['likes'] ?? [],
                           imageUrls: postData['imageUrls'] ?? [],
                           tags: postData['tags'] ?? '',

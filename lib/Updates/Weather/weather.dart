@@ -693,7 +693,7 @@ class WeatherScreenState extends State<WeatherScreen> {
           ),
           // Back button and title in the upper left corner
           Positioned(
-            top: 22,
+            top: 32,
             left: 9,
             child: Row(
               children: [
@@ -722,7 +722,7 @@ class WeatherScreenState extends State<WeatherScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(
-                  height: 70), // Space below the back button and title
+                  height: 65), // Space below the back button and title
               // Weather Card
               Expanded(
                 child: ListView(

@@ -472,10 +472,9 @@ class _ForumsPageState extends State<ForumsPage> {
                                       author: postData['author'] ?? '',
                                       time: postTime,
                                       likes: postLikes,
-                                      imageUrls: postData['imageUrls'] ??
-                                          [], // Corrected field
-                                      tags: postData['tags'] ??
-                                          '', // Corrected field
+                                      imageUrls: List<String>.from(
+                                          postData['imageUrls'] ?? []),
+                                      tags: postData['tags'] ?? '',
                                       userId: user?.uid ?? '',
                                     ),
                                   ),
@@ -483,7 +482,7 @@ class _ForumsPageState extends State<ForumsPage> {
                               },
                               child: Card(
                                 margin: const EdgeInsets.symmetric(
-                                    horizontal: 20.0, vertical: 10.0),
+                                    horizontal: 10.0, vertical: 3.0),
                                 child: Padding(
                                   padding: const EdgeInsets.all(8.0),
                                   child: Column(
@@ -529,7 +528,7 @@ class _ForumsPageState extends State<ForumsPage> {
                                       if (postData['tags'] != null &&
                                           postData['tags'].isNotEmpty)
                                         Text(
-                                          'Tags: ${postData['tags']}',
+                                          'Tags: #${postData['tags']}',
                                           style: const TextStyle(
                                             fontSize: 12,
                                             color: Colors.grey,
@@ -606,15 +605,47 @@ class _ForumsPageState extends State<ForumsPage> {
                                                     .snapshots(),
                                                 builder:
                                                     (context, commentSnapshot) {
-                                                  final commentCount =
-                                                      commentSnapshot.data?.docs
-                                                              .length ??
-                                                          0;
+                                                  if (!commentSnapshot
+                                                      .hasData) {
+                                                    return const Text(
+                                                      '0 Comments',
+                                                      style: TextStyle(
+                                                          fontSize: 13),
+                                                    );
+                                                  }
 
-                                                  return Text(
-                                                    '$commentCount Comments',
-                                                    style: const TextStyle(
-                                                        fontSize: 13),
+                                                  final comments =
+                                                      commentSnapshot
+                                                          .data!.docs;
+
+                                                  // Count the number of replies for each comment
+                                                  return FutureBuilder<int>(
+                                                    future: Future.wait(comments
+                                                        .map((comment) async {
+                                                      final repliesSnapshot =
+                                                          await comment
+                                                              .reference
+                                                              .collection(
+                                                                  'replies')
+                                                              .get();
+                                                      return repliesSnapshot
+                                                          .docs.length;
+                                                    })).then((replyCounts) =>
+                                                        replyCounts.fold<int>(
+                                                            comments.length,
+                                                            (total, count) =>
+                                                                total + count)),
+                                                    builder:
+                                                        (context, snapshot) {
+                                                      final totalCommentsAndReplies =
+                                                          snapshot.data ??
+                                                              comments.length;
+                                                      return Text(
+                                                        '$totalCommentsAndReplies Comments',
+                                                        style: const TextStyle(
+                                                            fontSize: 13),
+                                                      );
+                                                    },
                                                   );
                                                 },
                                               ),
@@ -916,9 +947,10 @@ class NotificationsPage extends StatelessWidget {
                           content: postData['content'] ?? 'No Content',
                           category: postData['category'] ?? 'No Category',
                           author: postData['author'] ?? '',
-                          time: formattedTime, // Pass the formatted time
+                          time: formattedTime,
                           likes: postData['likes'] ?? [],
-                          imageUrls: postData['imageUrls'] ?? [],
+                          imageUrls:
+                              List<String>.from(postData['imageUrls'] ?? []),
                           tags: postData['tags'] ?? '',
                         ),
                       ),

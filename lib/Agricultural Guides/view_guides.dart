@@ -323,7 +323,7 @@ class InfoViewer extends StatelessWidget {
           }
 
           final data = snapshot.data!.data() as Map<String, dynamic>;
-          final cropCategory = data['cropCategory'] ?? 'No Crop Category';
+          final cropCategory = data['cropCategory'] ?? '';
           final cropCategoryImage = data['cropCategoryImage'];
           final title = data['title'] ?? 'No Title';
           final titleImage = data['titleImage'];
@@ -332,7 +332,6 @@ class InfoViewer extends StatelessWidget {
           return ListView(
             padding: const EdgeInsets.all(16.0),
             children: [
-              // Placeholder with Title, Category, and Title Image
               Container(
                 padding: const EdgeInsets.all(16.0),
                 decoration: BoxDecoration(
@@ -356,14 +355,15 @@ class InfoViewer extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 8),
-                          Text(
-                            cropCategory,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.normal,
-                              color: Colors.white,
+                          if (cropCategory != null && cropCategory.isNotEmpty)
+                            Text(
+                              cropCategory,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.normal,
+                                color: Colors.white,
+                              ),
                             ),
-                          ),
                         ],
                       ),
                     ),
@@ -498,11 +498,12 @@ class _EditInfoPageState extends State<EditInfoPage> {
   late List<Map<String, dynamic>> _sections;
   late List<String> _images; // List to store image URLs
   final ImagePicker _picker = ImagePicker(); // Image picker instance
+  late Future<void> _fetchDataFuture; // Future to track data fetching
 
   @override
   void initState() {
     super.initState();
-    _fetchData();
+    _fetchDataFuture = _fetchData(); // Initialize the future
   }
 
   Future<void> _fetchData() async {
@@ -525,7 +526,6 @@ class _EditInfoPageState extends State<EditInfoPage> {
             .toList() ??
         [];
     _images = (data['images'] as List<dynamic>?)?.cast<String>() ?? [];
-    setState(() {});
   }
 
   Future<void> _updateData() async {
@@ -540,10 +540,12 @@ class _EditInfoPageState extends State<EditInfoPage> {
         'images': _images,
       });
 
+      // Show success message
       ScaffoldMessenger.of(context as BuildContext).showSnackBar(
         const SnackBar(content: Text('Content updated successfully!')),
       );
 
+      // Navigate back
       Navigator.pop(context as BuildContext);
     }
   }
@@ -585,136 +587,160 @@ class _EditInfoPageState extends State<EditInfoPage> {
 
   @override
   Widget build(BuildContext context) {
-    if (_titleController == null ||
-        _cropCategoryController == null ||
-        _sections == null) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Edit Content'),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            children: [
-              // Title Field
-              TextFormField(
-                controller: _titleController,
-                decoration: const InputDecoration(labelText: 'Title'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter a title';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
+      body: FutureBuilder<void>(
+        future: _fetchDataFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return Center(
+              child: Text('Error: ${snapshot.error}'),
+            );
+          }
 
-              // Crop Category Field
-              TextFormField(
-                controller: _cropCategoryController,
-                decoration: const InputDecoration(labelText: 'Crop Category'),
-              ),
-              const SizedBox(height: 16),
+          // Render the form after data is fetched
+          return Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Form(
+              key: _formKey,
+              child: ListView(
+                children: [
+                  // Title Field
+                  TextFormField(
+                    controller: _titleController,
+                    decoration: const InputDecoration(labelText: 'Title'),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter a title';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
 
-              // Sections
-              const Text(
-                'Sections',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              ..._sections.asMap().entries.map((entry) {
-                final sectionIndex = entry.key;
-                final section = entry.value;
+                  // Crop Category Field
+                  TextFormField(
+                    controller: _cropCategoryController,
+                    decoration:
+                        const InputDecoration(labelText: 'Crop Category'),
+                  ),
+                  const SizedBox(height: 16),
 
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    TextFormField(
-                      initialValue: section['heading'],
-                      decoration: const InputDecoration(labelText: 'Heading'),
-                      onChanged: (value) {
-                        _sections[sectionIndex]['heading'] = value;
-                      },
-                    ),
-                    const SizedBox(height: 8),
-                    TextFormField(
-                      initialValue: section['content'],
-                      decoration: const InputDecoration(labelText: 'Content'),
-                      maxLines: 3,
-                      onChanged: (value) {
-                        _sections[sectionIndex]['content'] = value;
-                      },
-                    ),
-                    const SizedBox(height: 8),
+                  // Sections
+                  const Text(
+                    'Sections',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  ..._sections.asMap().entries.map((entry) {
+                    final sectionIndex = entry.key;
+                    final section = entry.value;
 
-                    // Images for the Section
-                    const Text(
-                      'Images',
-                      style:
-                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    ...section['images'].asMap().entries.map((imageEntry) {
-                      final imageIndex = imageEntry.key;
-                      final imageUrl = imageEntry.value;
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        TextFormField(
+                          initialValue: section['heading'],
+                          decoration:
+                              const InputDecoration(labelText: 'Heading'),
+                          onChanged: (value) {
+                            _sections[sectionIndex]['heading'] = value;
+                          },
+                        ),
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          initialValue: section['content'],
+                          decoration:
+                              const InputDecoration(labelText: 'Content'),
+                          maxLines: 3,
+                          onChanged: (value) {
+                            _sections[sectionIndex]['content'] = value;
+                          },
+                        ),
+                        const SizedBox(height: 8),
 
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Use Image.network for URLs
-                          Image.network(
-                            imageUrl,
-                            width: double.infinity,
-                            height: 200,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return const Text(
-                                'Failed to load image',
-                                style: TextStyle(color: Colors.red),
-                              );
-                            },
-                          ),
-                          const SizedBox(height: 8),
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: TextButton(
-                              onPressed: () =>
-                                  _removeImage(sectionIndex, imageIndex),
-                              child: const Text(
-                                'Remove Image',
-                                style: TextStyle(color: Colors.red),
+                        // Images for the Section
+                        const Text(
+                          'Images',
+                          style: TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 8),
+                        ...section['images'].asMap().entries.map((imageEntry) {
+                          final imageIndex = imageEntry.key;
+                          final imageUrl = imageEntry.value;
+
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Use Image.network for URLs
+                              Image.network(
+                                imageUrl,
+                                width: double.infinity,
+                                height: 200,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return const Text(
+                                    'Failed to load image',
+                                    style: TextStyle(color: Colors.red),
+                                  );
+                                },
                               ),
-                            ),
-                          ),
-                          const Divider(),
-                        ],
-                      );
-                    }).toList(),
-                    const SizedBox(height: 8),
-                    ElevatedButton(
-                      onPressed: () => _pickImage(sectionIndex),
-                      child: const Text('Add Image'),
-                    ),
-                    const Divider(),
-                  ],
-                );
-              }).toList(),
+                              const SizedBox(height: 8),
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: TextButton(
+                                  onPressed: () =>
+                                      _removeImage(sectionIndex, imageIndex),
+                                  child: const Text(
+                                    'Remove Image',
+                                    style: TextStyle(color: Colors.red),
+                                  ),
+                                ),
+                              ),
+                              const Divider(),
+                            ],
+                          );
+                        }).toList(),
+                        const SizedBox(height: 8),
+                        ElevatedButton(
+                          onPressed: () => _pickImage(sectionIndex),
+                          child: const Text('Add Image'),
+                        ),
+                        const Divider(),
+                      ],
+                    );
+                  }).toList(),
 
-              // Save Changes Button
-              ElevatedButton(
-                onPressed: _updateData,
-                child: const Text('Save Changes'),
+                  // Add New Section Button
+                  ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        _sections.add({
+                          'heading': '',
+                          'content': '',
+                          'images': [],
+                        });
+                      });
+                    },
+                    child: const Text('Add New Section'),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Save Changes Button
+                  ElevatedButton(
+                    onPressed: _updateData,
+                    child: const Text('Save Changes'),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }

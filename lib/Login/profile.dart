@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -221,14 +223,38 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _signOut() async {
-    try {
-      await FirebaseAuth.instance.signOut();
-      Navigator.pushReplacementNamed(
-          context, '/login'); // Navigate to login screen
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error signing out: $e')),
-      );
+    final shouldSignOut = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirm Sign Out'),
+        content: const Text('Are you sure you want to sign out?'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop(false); // User cancels
+            },
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop(true); // User confirms
+            },
+            child: const Text('Sign Out'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldSignOut == true) {
+      try {
+        await FirebaseAuth.instance.signOut();
+        Navigator.pushReplacementNamed(
+            context, '/login'); // Navigate to login screen
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error signing out: $e')),
+        );
+      }
     }
   }
 

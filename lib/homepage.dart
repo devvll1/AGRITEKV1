@@ -305,21 +305,19 @@ class _HomePageState extends State<HomePage> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Material(
-                color: Colors
-                    .transparent, // Transparent material for just the button
+                color: Colors.transparent,
                 child: PopupMenuButton<String>(
                   onSelected: (String value) {
                     if (value == 'signOut') {
-                      _showSignOutConfirmation(
-                          context); // Show sign-out confirmation
+                      _showSignOutConfirmation(context);
                     } else if (value == 'exit') {
-                      _showExitConfirmation(context); // Show exit confirmation
+                      _showExitConfirmation(context);
                     } else if (value == 'addInformation') {
                       Navigator.push(
                         context,
                         CupertinoPageRoute(
                             builder: (context) => const AddInformationForm()),
-                      ); // Navigate to AddInformationForm
+                      );
                     } else {
                       print("Option 2 selected");
                     }
@@ -351,218 +349,201 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
         child: SafeArea(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: [
-              const SizedBox(height: 18),
-              const Text(
-                "AGRITEK",
-                style: TextStyle(
-                  fontSize: 28,
-                  color: CupertinoColors.black,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'Poppins',
-                  decoration: TextDecoration.none,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                const SizedBox(height: 18),
+                const Text(
+                  "AGRITEK",
+                  style: TextStyle(
+                    fontSize: 28,
+                    color: CupertinoColors.black,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Poppins',
+                    decoration: TextDecoration.none,
+                  ),
                 ),
-              ),
-              const Text(
-                "Your Farming Companion",
-                style: TextStyle(
-                  fontSize: 16,
-                  color: CupertinoColors.systemGrey,
-                  fontFamily: 'Poppins',
-                  decoration: TextDecoration.none,
+                const Text(
+                  "Your Farming Companion",
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: CupertinoColors.systemGrey,
+                    fontFamily: 'Poppins',
+                    decoration: TextDecoration.none,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 5),
+                const SizedBox(height: 5),
 
-              // Weather Container (Moved to the top)
-              isLoading
-                  ? const Center(child: CupertinoActivityIndicator())
-                  : Container(
-                      margin: const EdgeInsets.symmetric(
-                          horizontal: 15, vertical: 5),
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        image: const DecorationImage(
-                          image: AssetImage(
-                              'assets/images/weather.jpg'), // Background image
-                          fit: BoxFit
-                              .cover, // Ensures the image fills the container
+                // Weather Container
+                isLoading
+                    ? const Center(child: CupertinoActivityIndicator())
+                    : Container(
+                        margin: const EdgeInsets.symmetric(
+                            horizontal: 15, vertical: 10),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color.fromARGB(255, 98, 45, 8)
+                              .withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(15),
                         ),
-                        color: CupertinoColors.systemGreen.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(15),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            "Current Weather",
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: 'Poppins',
-                              decoration: TextDecoration.none,
-                              color: CupertinoColors
-                                  .white, // Adjusted for visibility
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              "Current Weather",
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: 'Poppins',
+                                decoration: TextDecoration.none,
+                                color: CupertinoColors.white,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              const Icon(
-                                CupertinoIcons.cloud_sun,
-                                size: 50,
-                                color: Color.fromARGB(255, 50, 101, 211),
-                              ),
-                              const SizedBox(width: 10),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    "${temperature.toStringAsFixed(1)}°C",
-                                    style: const TextStyle(
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.bold,
-                                      fontFamily: 'Poppins',
-                                      color: CupertinoColors
-                                          .white, // Adjusted for visibility
-                                      decoration: TextDecoration.none,
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                const Icon(
+                                  CupertinoIcons.cloud_sun,
+                                  size: 50,
+                                  color: Color.fromARGB(255, 255, 235, 13),
+                                ),
+                                const SizedBox(width: 10),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      "${temperature.toStringAsFixed(1)}°C",
+                                      style: const TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                        fontFamily: 'Poppins',
+                                        color: CupertinoColors.white,
+                                        decoration: TextDecoration.none,
+                                      ),
                                     ),
-                                  ),
-                                  Text(
-                                    weatherCondition,
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontFamily: 'Poppins',
-                                      color: CupertinoColors
-                                          .white, // Adjusted for visibility
-                                      decoration: TextDecoration.none,
+                                    Text(
+                                      weatherCondition,
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        fontFamily: 'Poppins',
+                                        color: CupertinoColors.white,
+                                        decoration: TextDecoration.none,
+                                      ),
                                     ),
-                                  ),
-                                  Text(
-                                    locationName,
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontFamily: 'Poppins',
-                                      color: CupertinoColors
-                                          .white, // Adjusted for visibility
-                                      decoration: TextDecoration.none,
+                                    Text(
+                                      locationName,
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        fontFamily: 'Poppins',
+                                        color: CupertinoColors.white,
+                                        decoration: TextDecoration.none,
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(
-                                width: 76,
-                              ), // Adds spacing to the left
-                              CupertinoButton(
-                                padding: const EdgeInsets.all(30.0),
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    CupertinoPageRoute(
-                                      builder: (context) =>
-                                          const WeatherScreen(), // Ensure WeatherScreen displays forecast info
+                                  ],
+                                ),
+                                const Spacer(),
+                                CupertinoButton(
+                                  padding: const EdgeInsets.all(22.0),
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      CupertinoPageRoute(
+                                        builder: (context) =>
+                                            const WeatherScreen(),
+                                      ),
+                                    );
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12, vertical: 9),
+                                    decoration: BoxDecoration(
+                                      color: CupertinoColors.activeGreen,
+                                      borderRadius: BorderRadius.circular(20),
                                     ),
-                                  );
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 16, vertical: 9),
-                                  decoration: BoxDecoration(
-                                    color: CupertinoColors.activeGreen,
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: const Text(
-                                    "See Forecast",
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: CupertinoColors.white,
-                                      fontFamily: 'Poppins',
+                                    child: const Text(
+                                      "See Forecast",
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: CupertinoColors.white,
+                                        fontFamily: 'Poppins',
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            " $currentDate",
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontFamily: 'Poppins',
-                              color: CupertinoColors
-                                  .white, // Adjusted for visibility
-                              decoration: TextDecoration.none,
+                              ],
                             ),
-                          ),
-                        ],
+                            const SizedBox(height: 10),
+                            Text(
+                              " $currentDate",
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontFamily: 'Poppins',
+                                color: CupertinoColors.white,
+                                decoration: TextDecoration.none,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
 
-              const SizedBox(height: 5),
+                const SizedBox(height: 10),
 
-              // Main Buttons Section
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 15),
+                // Main Buttons Section
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 15,
+                  ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // First Button: Agricultural Guides
                       _buildMenuButton(
                         "Agricultural Guides",
                         context,
                         const ViewGuides(),
                         CupertinoIcons.book,
-                        'assets/images/agricultural_guides.jpg', // Background image
+                        'assets/images/agricultural_guides.jpg',
                       ),
-                      const SizedBox(height: 4),
-
-                      // Second Button: Community
+                      const SizedBox(height: 10),
                       _buildMenuButton(
                         "Community",
                         context,
                         const ForumsPage(),
                         CupertinoIcons.group,
-                        'assets/images/forums.jpg', // Background image
+                        'assets/images/forums.jpg',
                       ),
-                      const SizedBox(height: 4),
-
-                      // Third Button: Updates
+                      const SizedBox(height: 10),
                       _buildMenuButton(
                         "Updates",
                         context,
                         const ViewMarketPrice(),
                         CupertinoIcons.cart_fill,
-                        'assets/images/updates.png', // Background image
+                        'assets/images/updates.png',
                       ),
-                      const SizedBox(height: 4),
-
-                      // Fourth Button: Track
+                      const SizedBox(height: 10),
                       _buildMenuButton(
                         "Track",
                         context,
                         const CalendarScreen(),
                         CupertinoIcons.calendar,
-                        'assets/images/track.png', // Background image
+                        'assets/images/track.png',
                       ),
                     ],
                   ),
                 ),
-              ),
-
-              const Text(
-                "All rights Reserved.",
-                style: TextStyle(
-                  fontSize: 10,
-                  fontFamily: 'Poppins',
-                  decoration: TextDecoration.none,
-                  color: CupertinoColors.systemGrey,
+                const SizedBox(height: 20),
+                const Text(
+                  "All rights Reserved.",
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontFamily: 'Poppins',
+                    decoration: TextDecoration.none,
+                    color: CupertinoColors.systemGrey,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 5),
-            ],
+                const SizedBox(height: 5),
+              ],
+            ),
           ),
         ),
       ),
@@ -605,10 +586,11 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildMenuButton(String title, BuildContext context, Widget page,
-      IconData icon, String imagePath) {
+      IconData icon, String imagePath,
+      {String? category}) {
     return Container(
       width: double.infinity, // Ensures the container fills the row
-      height: 85, // Fixed height for the button
+      height: 100, // Increased height for the button
       decoration: BoxDecoration(
         image: DecorationImage(
           image: AssetImage(imagePath), // Background image
@@ -639,6 +621,18 @@ class _HomePageState extends State<HomePage> {
                 fontFamily: 'Poppins',
               ),
             ),
+            if (category != null &&
+                category.isNotEmpty) // Conditionally render category
+              Text(
+                category,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontWeight: FontWeight.normal,
+                  color: CupertinoColors.white, // Text color
+                  fontSize: 10, // Smaller font size for category
+                  fontFamily: 'Poppins',
+                ),
+              ),
           ],
         ),
       ),

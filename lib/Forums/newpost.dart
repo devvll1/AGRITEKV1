@@ -1,3 +1,5 @@
+// ignore_for_file: library_private_types_in_public_api, use_build_context_synchronously, unnecessary_null_comparison
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -6,7 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 
 class NewPostPage extends StatefulWidget {
-  const NewPostPage({Key? key}) : super(key: key);
+  const NewPostPage({super.key});
 
   @override
   _NewPostPageState createState() => _NewPostPageState();
@@ -185,10 +187,12 @@ class _NewPostPageState extends State<NewPostPage> {
                 children: [
                   CircleAvatar(
                     radius: 25,
-                    backgroundImage: _profileImageUrl != null
-                        ? NetworkImage(_profileImageUrl!)
-                        : const AssetImage('assets/images/defaultprofile.png')
-                            as ImageProvider,
+                    backgroundImage: _profileImageUrl != null &&
+                            _profileImageUrl!.isNotEmpty
+                        ? NetworkImage(
+                            _profileImageUrl!) // Use NetworkImage if profile image exists
+                        : const AssetImage(
+                            'assets/images/defaultprofile.png'), // Use AssetImage as fallback
                   ),
                   const SizedBox(width: 10),
                   Text(
@@ -220,6 +224,7 @@ class _NewPostPageState extends State<NewPostPage> {
               Row(
                 children: [
                   Expanded(
+                    flex: 3, // Category field takes more space
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -243,7 +248,7 @@ class _NewPostPageState extends State<NewPostPage> {
                               borderRadius: BorderRadius.circular(8),
                             ),
                             contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 10,
+                              horizontal: 2,
                               vertical: 12,
                             ),
                           ),
@@ -253,6 +258,7 @@ class _NewPostPageState extends State<NewPostPage> {
                   ),
                   const SizedBox(width: 6),
                   Expanded(
+                    flex: 2, // Tag field takes less space
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -261,6 +267,12 @@ class _NewPostPageState extends State<NewPostPage> {
                           controller: _tagController,
                           decoration: InputDecoration(
                             hintText: 'Enter a hashtag',
+                            hintStyle: const TextStyle(
+                              fontSize:
+                                  14, // Smaller font size for the hint text
+                              color: Color.fromARGB(255, 80, 79,
+                                  79), // Optional: Adjust color for better visibility
+                            ),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
