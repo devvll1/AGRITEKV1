@@ -309,42 +309,16 @@ class _ViewPostPageState extends State<ViewPostPage> {
     try {
       if (currentLikes.contains(userId)) {
         // Unlike the post
-        setState(() {
-          _hasLiked = false;
-          _postLikes.remove(userId); // Update the local state
-        });
-
         await postDoc.update({
           'likes': FieldValue.arrayRemove([userId]),
         });
       } else {
         // Like the post
-        setState(() {
-          _hasLiked = true;
-          _postLikes.add(userId); // Update the local state
-        });
-
         await postDoc.update({
           'likes': FieldValue.arrayUnion([userId]),
         });
 
-        // Fetch the user's name
-        final userDoc = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(userId)
-            .get();
-
-        if (!userDoc.exists) {
-          debugPrint('User document does not exist');
-          return;
-        }
-
-        final userData = userDoc.data()!;
-        final firstName = userData['firstName'] ?? 'Unknown';
-        final lastName = userData['lastName'] ?? 'User';
-        final fullName = '$firstName $lastName';
-
-        // Add a notification for the post author
+        // Notify the post author
         if (postAuthorId != userId) {
           final notificationRef = FirebaseFirestore.instance
               .collection('notifications')
@@ -357,26 +331,16 @@ class _ViewPostPageState extends State<ViewPostPage> {
             'postId': postId,
             'postTitle': postTitle,
             'senderId': userId,
-            'senderName': fullName,
+            'senderName': user.displayName ?? 'Unknown User',
             'timestamp': FieldValue.serverTimestamp(),
             'isRead': false,
           });
-
-          debugPrint('Notification added for like');
         }
       }
     } catch (e) {
-      debugPrint('Error toggling like: $e');
-      // Revert the state if the operation fails
-      setState(() {
-        if (_hasLiked) {
-          _hasLiked = false;
-          _postLikes.remove(userId);
-        } else {
-          _hasLiked = true;
-          _postLikes.add(userId);
-        }
-      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to like post')),
+      );
     }
   }
 
@@ -431,6 +395,26 @@ class _ViewPostPageState extends State<ViewPostPage> {
       final postDoc =
           FirebaseFirestore.instance.collection('posts').doc(postId);
       await postDoc.collection('comments').add(commentData);
+
+      // Notify the post author
+      if (postAuthorId != user.uid) {
+        final notificationRef = FirebaseFirestore.instance
+            .collection('notifications')
+            .doc(postAuthorId)
+            .collection('userNotifications')
+            .doc();
+
+        await notificationRef.set({
+          'type': 'comment',
+          'postId': postId,
+          'postTitle': postTitle,
+          'senderId': user.uid,
+          'senderName': fullName,
+          'comment': comment,
+          'timestamp': FieldValue.serverTimestamp(),
+          'isRead': false,
+        });
+      }
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Comment added successfully')),
@@ -548,6 +532,29 @@ class _ViewPostPageState extends State<ViewPostPage> {
         await commentRef.update({
           'likes': FieldValue.arrayUnion([userId]),
         });
+
+        // Notify the comment author
+        final commentDoc = await commentRef.get();
+        final commentData = commentDoc.data() as Map<String, dynamic>;
+        final commentAuthorId = commentData['userId'];
+
+        if (commentAuthorId != userId) {
+          final notificationRef = FirebaseFirestore.instance
+              .collection('notifications')
+              .doc(commentAuthorId)
+              .collection('userNotifications')
+              .doc();
+
+          await notificationRef.set({
+            'type': 'like',
+            'postId': widget.postId,
+            'postTitle': widget.title,
+            'senderId': userId,
+            'senderName': user.displayName ?? 'Unknown User',
+            'timestamp': FieldValue.serverTimestamp(),
+            'isRead': false,
+          });
+        }
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -556,7 +563,8 @@ class _ViewPostPageState extends State<ViewPostPage> {
     }
   }
 
-  Future<void> _replyToComment(DocumentReference commentRef) async {
+  Future<void> _replyToComment(DocumentReference parentRef,
+      String parentAuthorId, String parentAuthorName) async {
     final user = FirebaseAuth.instance.currentUser;
 
     if (user == null) {
@@ -591,21 +599,24 @@ class _ViewPostPageState extends State<ViewPostPage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Reply to Comment'),
+          title: const Text('Reply'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
                 controller: replyController,
-                decoration: const InputDecoration(labelText: 'Reply'),
+                decoration: InputDecoration(
+                  labelText: 'Reply to $parentAuthorName',
+                ),
               ),
               const SizedBox(height: 8),
               CupertinoButton(
                 child: const Text('Attach Image'),
                 onPressed: () async {
-                  final imageUrl = await _pickAndUploadImage();
-                  if (imageUrl != null) {
+                  final pickedImageUrl = await _pickAndUploadImage();
+                  if (pickedImageUrl != null) {
                     replyController.text += '\n[Image Attached]';
+                    imageUrl = pickedImageUrl;
                   }
                 },
               ),
@@ -632,25 +643,22 @@ class _ViewPostPageState extends State<ViewPostPage> {
 
     try {
       // Add the reply to Firestore
-      await commentRef.collection('replies').add({
-        'text': reply['text'],
+      await parentRef.collection('replies').add({
+        'text':
+            '@$parentAuthorName ${reply['text']}', // Mention the parent author
         'imageUrl': reply['imageUrl'],
         'timestamp': FieldValue.serverTimestamp(),
         'author': userName,
         'profileImageUrl': userProfileImageUrl,
         'userId': user.uid,
+        'likes': [],
       });
 
-      // Fetch the comment's author ID
-      final commentSnapshot = await commentRef.get();
-      final commentData = commentSnapshot.data() as Map<String, dynamic>?;
-      final commentAuthorId = commentData?['userId'];
-
-      // Notify the comment's author
-      if (commentAuthorId != null && commentAuthorId != user.uid) {
+      // Notify the original reply's author
+      if (parentAuthorId != user.uid) {
         final notificationRef = FirebaseFirestore.instance
             .collection('notifications')
-            .doc(commentAuthorId)
+            .doc(parentAuthorId)
             .collection('userNotifications')
             .doc();
 
@@ -671,7 +679,96 @@ class _ViewPostPageState extends State<ViewPostPage> {
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to reply to comment')),
+        const SnackBar(content: Text('Failed to reply')),
+      );
+    }
+  }
+
+  Future<void> _deleteReply(DocumentReference replyRef) async {
+    final confirmation = await showCupertinoDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return CupertinoAlertDialog(
+          title: const Text('Delete Reply'),
+          content: const Text('Are you sure you want to delete this reply?'),
+          actions: [
+            CupertinoDialogAction(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            CupertinoDialogAction(
+              onPressed: () => Navigator.of(context).pop(true),
+              isDestructiveAction: true,
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmation != true) return;
+
+    try {
+      await replyRef.delete();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Reply deleted successfully')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to delete reply')),
+      );
+    }
+  }
+
+  Future<void> _toggleReplyLike(
+      DocumentReference replyRef, List<String> currentLikes) async {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('You must be logged in to like replies.')),
+      );
+      return;
+    }
+
+    final userId = user.uid;
+
+    try {
+      if (currentLikes.contains(userId)) {
+        await replyRef.update({
+          'likes': FieldValue.arrayRemove([userId]),
+        });
+      } else {
+        await replyRef.update({
+          'likes': FieldValue.arrayUnion([userId]),
+        });
+
+        // Notify the reply author
+        final replyDoc = await replyRef.get();
+        final replyData = replyDoc.data() as Map<String, dynamic>;
+        final replyAuthorId = replyData['userId'];
+
+        if (replyAuthorId != userId) {
+          final notificationRef = FirebaseFirestore.instance
+              .collection('notifications')
+              .doc(replyAuthorId)
+              .collection('userNotifications')
+              .doc();
+
+          await notificationRef.set({
+            'type': 'like',
+            'postId': widget.postId,
+            'postTitle': widget.title,
+            'senderId': userId,
+            'senderName': user.displayName ?? 'Unknown User',
+            'timestamp': FieldValue.serverTimestamp(),
+            'isRead': false,
+          });
+        }
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to like reply')),
       );
     }
   }
@@ -755,6 +852,188 @@ class _ViewPostPageState extends State<ViewPostPage> {
     }
   }
 
+  Widget _buildReplies(DocumentReference parentRef) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: parentRef
+          .collection('replies')
+          .orderBy('timestamp', descending: true)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        final replies = snapshot.data!.docs;
+
+        return Column(
+          children: replies.map((reply) {
+            final replyData = reply.data() as Map<String, dynamic>;
+            final replyAuthor = replyData['author'] ?? 'Anonymous';
+            final replyText = replyData['text'] ?? '';
+            final replyImageUrl = replyData['imageUrl'] ?? '';
+            final replyProfileImageUrl = replyData['profileImageUrl'] ?? '';
+            final replyUserId = replyData['userId'] ?? '';
+            final replyLikes = List<String>.from(replyData['likes'] ?? []);
+            final replyTimestamp = replyData['timestamp'] as Timestamp?;
+            final replyTime = replyTimestamp != null
+                ? DateFormat('MMM d, yyyy h:mm a')
+                    .format(replyTimestamp.toDate())
+                : 'Just now';
+
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      CircleAvatar(
+                        radius: 16,
+                        backgroundImage: replyProfileImageUrl.isNotEmpty &&
+                                Uri.tryParse(replyProfileImageUrl)
+                                        ?.hasAbsolutePath ==
+                                    true
+                            ? NetworkImage(replyProfileImageUrl)
+                            : const AssetImage(
+                                    'assets/images/defaultprofile.png')
+                                as ImageProvider,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.all(8.0),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey.withOpacity(0.2),
+                                spreadRadius: 1,
+                                blurRadius: 3,
+                                offset: const Offset(0, 1),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                replyAuthor,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              if (replyText.isNotEmpty) Text(replyText),
+                              if (replyImageUrl.isNotEmpty)
+                                GestureDetector(
+                                  onTap: () =>
+                                      _showFullScreenImage(replyImageUrl),
+                                  child: Image.network(
+                                    replyImageUrl,
+                                    height: 100,
+                                    fit: BoxFit.cover,
+                                    loadingBuilder:
+                                        (context, child, loadingProgress) {
+                                      if (loadingProgress == null) return child;
+                                      return const Center(
+                                        child: CircularProgressIndicator(),
+                                      );
+                                    },
+                                    errorBuilder:
+                                        (context, error, stackTrace) =>
+                                            const Icon(
+                                      Icons.broken_image,
+                                      color: Colors.grey,
+                                      size: 50,
+                                    ),
+                                  ),
+                                ),
+                              const SizedBox(height: 4),
+                              Text(
+                                replyTime,
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  GestureDetector(
+                                    onTap: () => _toggleReplyLike(
+                                        reply.reference, replyLikes),
+                                    child: Icon(
+                                      replyLikes.contains(FirebaseAuth
+                                              .instance.currentUser?.uid)
+                                          ? CupertinoIcons.heart_fill
+                                          : CupertinoIcons.heart,
+                                      color: replyLikes.contains(FirebaseAuth
+                                              .instance.currentUser?.uid)
+                                          ? CupertinoColors.systemRed
+                                          : CupertinoColors.inactiveGray,
+                                      size: 18,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text('${replyLikes.length}'),
+                                  const SizedBox(width: 16),
+                                  GestureDetector(
+                                    onTap: () => _replyToComment(
+                                        reply.reference,
+                                        replyUserId,
+                                        replyAuthor),
+                                    child: const Icon(
+                                      CupertinoIcons.reply,
+                                      color: CupertinoColors.activeBlue,
+                                      size: 18,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  if (FirebaseAuth.instance.currentUser?.uid ==
+                                      replyUserId) ...[
+                                    GestureDetector(
+                                      onTap: () => _editComment(
+                                          reply.reference, replyText),
+                                      child: const Icon(
+                                        CupertinoIcons.pencil,
+                                        color: CupertinoColors.activeBlue,
+                                        size: 18,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    GestureDetector(
+                                      onTap: () =>
+                                          _deleteReply(reply.reference),
+                                      child: const Icon(
+                                        CupertinoIcons.delete,
+                                        color: CupertinoColors.destructiveRed,
+                                        size: 18,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  // Recursively build replies to this reply
+                  _buildReplies(
+                      reply.reference), // Recursive call for nested replies
+                ],
+              ),
+            );
+          }).toList(),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final currentUser = FirebaseAuth.instance.currentUser;
@@ -810,6 +1089,13 @@ class _ViewPostPageState extends State<ViewPostPage> {
                                   ? NetworkImage(_authorProfileImageUrl!)
                                   : const AssetImage(
                                       'assets/images/defaultprofile.png'),
+                              onBackgroundImageError: (_, __) {
+                                // Handle any errors with the NetworkImage gracefully
+                                setState(() {
+                                  _authorProfileImageUrl =
+                                      null; // Fallback to AssetImage
+                                });
+                              },
                             ),
                             const SizedBox(width: 8),
                             Column(
@@ -1132,7 +1418,10 @@ class _ViewPostPageState extends State<ViewPostPage> {
                                                         onTap: () =>
                                                             _replyToComment(
                                                                 comments[index]
-                                                                    .reference),
+                                                                    .reference,
+                                                                commentData[
+                                                                    'userId'],
+                                                                author),
                                                         child: const Icon(
                                                           CupertinoIcons.reply,
                                                           color: CupertinoColors
@@ -1191,270 +1480,7 @@ class _ViewPostPageState extends State<ViewPostPage> {
                                         ],
                                       ),
                                       // Replies Section
-                                      StreamBuilder<QuerySnapshot>(
-                                        stream: comments[index]
-                                            .reference
-                                            .collection('replies')
-                                            .orderBy('timestamp',
-                                                descending: true)
-                                            .snapshots(),
-                                        builder: (context, replySnapshot) {
-                                          if (!replySnapshot.hasData ||
-                                              replySnapshot
-                                                  .data!.docs.isEmpty) {
-                                            return const SizedBox.shrink();
-                                          }
-
-                                          final replies =
-                                              replySnapshot.data!.docs;
-
-                                          return Padding(
-                                            padding: const EdgeInsets.only(
-                                                left: 40.0, top: 8.0),
-                                            child: Column(
-                                              children: replies.map((reply) {
-                                                final replyData = reply.data()
-                                                    as Map<String, dynamic>;
-                                                final replyAuthor =
-                                                    replyData['author'] ??
-                                                        'Anonymous';
-                                                final replyText =
-                                                    replyData['text'] ?? '';
-                                                final replyImageUrl =
-                                                    replyData['imageUrl'] ?? '';
-                                                final replyProfileImageUrl =
-                                                    replyData[
-                                                            'profileImageUrl'] ??
-                                                        '';
-                                                final replyLikes =
-                                                    List<String>.from(
-                                                        replyData['likes'] ??
-                                                            []);
-                                                final replyTimestamp =
-                                                    replyData['timestamp']
-                                                        as Timestamp?;
-                                                final replyTime = replyTimestamp !=
-                                                        null
-                                                    ? DateFormat(
-                                                            'MMM d, yyyy h:mm a')
-                                                        .format(replyTimestamp
-                                                            .toDate())
-                                                    : 'Just now';
-
-                                                return Padding(
-                                                  padding:
-                                                      const EdgeInsets.only(
-                                                          bottom: 8.0),
-                                                  child: Row(
-                                                    crossAxisAlignment:
-                                                        CrossAxisAlignment
-                                                            .start,
-                                                    children: [
-                                                      CircleAvatar(
-                                                        radius: 12,
-                                                        backgroundImage: (replyProfileImageUrl
-                                                                    .isNotEmpty &&
-                                                                Uri.tryParse(
-                                                                            replyProfileImageUrl)
-                                                                        ?.hasAbsolutePath ==
-                                                                    true)
-                                                            ? NetworkImage(
-                                                                replyProfileImageUrl)
-                                                            : const AssetImage(
-                                                                    'assets/images/defaultprofile.png')
-                                                                as ImageProvider,
-                                                      ),
-                                                      const SizedBox(width: 8),
-                                                      Expanded(
-                                                        child: Container(
-                                                          padding:
-                                                              const EdgeInsets
-                                                                  .all(8.0),
-                                                          decoration:
-                                                              BoxDecoration(
-                                                            color: Colors.white,
-                                                            borderRadius:
-                                                                BorderRadius
-                                                                    .circular(
-                                                                        8),
-                                                            boxShadow: [
-                                                              BoxShadow(
-                                                                color: Colors
-                                                                    .grey
-                                                                    .withOpacity(
-                                                                        0.2),
-                                                                spreadRadius: 1,
-                                                                blurRadius: 3,
-                                                                offset:
-                                                                    const Offset(
-                                                                        0, 1),
-                                                              ),
-                                                            ],
-                                                          ),
-                                                          child: Column(
-                                                            crossAxisAlignment:
-                                                                CrossAxisAlignment
-                                                                    .start,
-                                                            children: [
-                                                              Text(
-                                                                replyAuthor,
-                                                                style:
-                                                                    const TextStyle(
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .bold,
-                                                                  fontSize: 12,
-                                                                ),
-                                                              ),
-                                                              const SizedBox(
-                                                                  height: 4),
-                                                              if (replyText
-                                                                  .isNotEmpty)
-                                                                Text(replyText),
-                                                              if (replyImageUrl
-                                                                  .isNotEmpty)
-                                                                GestureDetector(
-                                                                  onTap: () =>
-                                                                      _showFullScreenImage(
-                                                                          replyImageUrl),
-                                                                  child: Image
-                                                                      .network(
-                                                                    replyImageUrl,
-                                                                    height: 100,
-                                                                    fit: BoxFit
-                                                                        .cover,
-                                                                    loadingBuilder:
-                                                                        (context,
-                                                                            child,
-                                                                            loadingProgress) {
-                                                                      if (loadingProgress ==
-                                                                          null)
-                                                                        return child;
-                                                                      return const Center(
-                                                                        child:
-                                                                            CircularProgressIndicator(),
-                                                                      );
-                                                                    },
-                                                                    errorBuilder: (context,
-                                                                            error,
-                                                                            stackTrace) =>
-                                                                        const Icon(
-                                                                      Icons
-                                                                          .broken_image,
-                                                                      color: Colors
-                                                                          .grey,
-                                                                      size: 50,
-                                                                    ),
-                                                                  ),
-                                                                ),
-                                                              const SizedBox(
-                                                                  height: 4),
-                                                              Text(
-                                                                replyTime,
-                                                                style:
-                                                                    const TextStyle(
-                                                                  fontSize: 10,
-                                                                  color: Colors
-                                                                      .grey,
-                                                                ),
-                                                              ),
-                                                              const SizedBox(
-                                                                  height: 8),
-                                                              Row(
-                                                                children: [
-                                                                  Row(
-                                                                    children: [
-                                                                      GestureDetector(
-                                                                        onTap: () => _toggleCommentLike(
-                                                                            reply.reference,
-                                                                            replyLikes),
-                                                                        child:
-                                                                            Icon(
-                                                                          replyLikes.contains(FirebaseAuth.instance.currentUser?.uid)
-                                                                              ? CupertinoIcons.heart_fill
-                                                                              : CupertinoIcons.heart,
-                                                                          color: replyLikes.contains(FirebaseAuth.instance.currentUser?.uid)
-                                                                              ? CupertinoColors.systemRed
-                                                                              : CupertinoColors.inactiveGray,
-                                                                          size:
-                                                                              18,
-                                                                        ),
-                                                                      ),
-                                                                      const SizedBox(
-                                                                          width:
-                                                                              4),
-                                                                      Text(
-                                                                          '${replyLikes.length}'),
-                                                                      const SizedBox(
-                                                                          width:
-                                                                              16),
-                                                                      GestureDetector(
-                                                                        onTap: () =>
-                                                                            _replyToComment(reply.reference),
-                                                                        child:
-                                                                            const Icon(
-                                                                          CupertinoIcons
-                                                                              .reply,
-                                                                          color:
-                                                                              CupertinoColors.activeBlue,
-                                                                          size:
-                                                                              18,
-                                                                        ),
-                                                                      ),
-                                                                      if (FirebaseAuth
-                                                                              .instance
-                                                                              .currentUser
-                                                                              ?.uid ==
-                                                                          replyData[
-                                                                              'userId']) ...[
-                                                                        const SizedBox(
-                                                                            width:
-                                                                                16),
-                                                                        GestureDetector(
-                                                                          onTap: () => _editComment(
-                                                                              reply.reference,
-                                                                              replyData['text']),
-                                                                          child:
-                                                                              const Icon(
-                                                                            CupertinoIcons.pencil,
-                                                                            color:
-                                                                                CupertinoColors.activeBlue,
-                                                                            size:
-                                                                                18,
-                                                                          ),
-                                                                        ),
-                                                                        const SizedBox(
-                                                                            width:
-                                                                                8),
-                                                                        GestureDetector(
-                                                                          onTap: () =>
-                                                                              _deleteComment(reply.reference),
-                                                                          child:
-                                                                              const Icon(
-                                                                            CupertinoIcons.delete,
-                                                                            color:
-                                                                                CupertinoColors.destructiveRed,
-                                                                            size:
-                                                                                18,
-                                                                          ),
-                                                                        ),
-                                                                      ],
-                                                                    ],
-                                                                  ),
-                                                                ],
-                                                              ),
-                                                            ],
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                );
-                                              }).toList(),
-                                            ),
-                                          );
-                                        },
-                                      ),
+                                      _buildReplies(comments[index].reference),
                                     ],
                                   ),
                                 );

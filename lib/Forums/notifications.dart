@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter/cupertino.dart';
 
 class NotificationsPage extends StatelessWidget {
   const NotificationsPage({super.key});
@@ -76,8 +77,10 @@ class NotificationsPage extends StatelessWidget {
                           category: postData['category'] ?? 'No Category',
                           author: postData['author'] ?? '',
                           time: formattedTime, // Pass the formatted time
-                          likes: postData['likes'] ?? [],
-                          imageUrls: postData['imageUrls'] ?? [],
+                          likes: _convertToStringList(
+                              postData['likes']), // Safely convert likes
+                          imageUrls: _convertToStringList(postData[
+                              'imageUrls']), // Safely convert imageUrls
                           tags: postData['tags'] ?? '',
                         ),
                       ),
@@ -92,23 +95,29 @@ class NotificationsPage extends StatelessWidget {
                   color: isRead
                       ? Colors
                           .white // Default background for read notifications
-                      : Colors.grey[200], // Highlight unread notifications
+                      : Colors.grey[300], // Highlight unread notifications
                   padding:
                       const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
                   child: Row(
                     children: [
-                      // Sender's profile image
-                      CircleAvatar(
-                        radius: 20,
-                        backgroundImage: (data['profileImageUrl'] != null &&
-                                data['profileImageUrl'].isNotEmpty)
-                            ? NetworkImage(data['profileImageUrl'])
-                            : const AssetImage(
-                                    'assets/images/defaultprofile.png')
-                                as ImageProvider,
+                      // Cupertino icon for notifications
+                      Icon(
+                        data['type'] == 'like'
+                            ? CupertinoIcons.heart_fill // Icon for likes
+                            : data['type'] == 'comment'
+                                ? CupertinoIcons
+                                    .chat_bubble_fill // Icon for comments
+                                : CupertinoIcons
+                                    .arrow_turn_up_left, // Icon for replies
+                        color: data['type'] == 'like'
+                            ? Colors.red
+                            : data['type'] == 'comment'
+                                ? Colors.blue
+                                : Colors.green, // Different color for replies
+                        size: 24,
                       ),
                       const SizedBox(
-                          width: 10), // Spacing between image and text
+                          width: 10), // Spacing between icon and text
 
                       // Notification content
                       Expanded(
@@ -118,13 +127,18 @@ class NotificationsPage extends StatelessWidget {
                             Text(
                               data['type'] == 'like'
                                   ? '$senderName liked your post: ${data['postTitle']}'
-                                  : '$senderName commented on your post: ${data['postTitle']}',
+                                  : data['type'] == 'comment'
+                                      ? '$senderName commented on your post: ${data['postTitle']}'
+                                      : data['type'] == 'reply'
+                                          ? '$senderName replied to your comment: ${data['postTitle']}'
+                                          : '$senderName replied to your reply: ${data['postTitle']}',
                               style: const TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            if (data['type'] == 'comment')
+                            if (data['type'] == 'comment' ||
+                                data['type'] == 'reply')
                               Text(
                                 data['comment'] ?? '',
                                 style: const TextStyle(fontSize: 12),
@@ -283,5 +297,13 @@ class NotificationsPage extends StatelessWidget {
     } catch (e) {
       debugPrint('Error adding comment: $e');
     }
+  }
+
+  // Helper function to safely convert a dynamic list to List<String>
+  List<String> _convertToStringList(dynamic list) {
+    if (list is List) {
+      return list.whereType<String>().toList(); // Filter only String elements
+    }
+    return [];
   }
 }

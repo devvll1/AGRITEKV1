@@ -4,6 +4,7 @@ import 'package:agritek/Forums/newpost.dart';
 import 'package:agritek/Forums/notifications.dart';
 import 'package:agritek/Forums/profilefeed.dart';
 import 'package:agritek/Forums/viewpost.dart';
+import 'package:agritek/Forums/notifications.dart' as notifications;
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -244,7 +245,7 @@ class _ForumsPageState extends State<ForumsPage> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => NotificationsPage(),
+                        builder: (context) => notifications.NotificationsPage(),
                       ),
                     );
                   },
@@ -862,107 +863,6 @@ class _FullScreenGalleryState extends State<FullScreenGallery> {
                 size: 50,
               ),
             ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-class NotificationsPage extends StatelessWidget {
-  const NotificationsPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final userId = FirebaseAuth.instance.currentUser?.uid;
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Notifications'),
-      ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('notifications')
-            .doc(userId)
-            .collection('userNotifications')
-            .orderBy('timestamp', descending: true)
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          final notifications = snapshot.data!.docs;
-
-          if (notifications.isEmpty) {
-            return const Center(child: Text('No notifications.'));
-          }
-
-          return ListView.builder(
-            itemCount: notifications.length,
-            itemBuilder: (context, index) {
-              final notification = notifications[index];
-              final data = notification.data() as Map<String, dynamic>;
-
-              final senderName = data['senderName'] ?? 'Someone';
-
-              return ListTile(
-                title: Text(
-                  data['type'] == 'like'
-                      ? '$senderName liked your post: ${data['postTitle']}'
-                      : '$senderName commented on your post: ${data['postTitle']}',
-                ),
-                subtitle:
-                    data['type'] == 'comment' ? Text(data['comment']) : null,
-                trailing: IconButton(
-                  icon: const Icon(Icons.check),
-                  onPressed: () {
-                    notification.reference.update({'isRead': true});
-                  },
-                ),
-                onTap: () async {
-                  // Fetch the post details from Firestore
-                  final postSnapshot = await FirebaseFirestore.instance
-                      .collection('posts')
-                      .doc(data['postId'])
-                      .get();
-
-                  if (postSnapshot.exists) {
-                    final postData =
-                        postSnapshot.data() as Map<String, dynamic>;
-
-                    // Format the timestamp
-                    final timestamp = postData['timestamp'] as Timestamp;
-                    final formattedTime = DateFormat('MMM dd, yyyy hh:mm a')
-                        .format(timestamp.toDate());
-
-                    // Navigate to the ViewPostPage
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ViewPostPage(
-                          userId: postData['author'] ?? '',
-                          postId: data['postId'],
-                          title: postData['title'] ?? 'No Title',
-                          content: postData['content'] ?? 'No Content',
-                          category: postData['category'] ?? 'No Category',
-                          author: postData['author'] ?? '',
-                          time: formattedTime,
-                          likes: postData['likes'] ?? [],
-                          imageUrls:
-                              List<String>.from(postData['imageUrls'] ?? []),
-                          tags: postData['tags'] ?? '',
-                        ),
-                      ),
-                    );
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Post not found.')),
-                    );
-                  }
-                },
-              );
-            },
           );
         },
       ),
