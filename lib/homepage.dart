@@ -524,7 +524,7 @@ class _HomePageState extends State<HomePage> {
                       _buildMenuButton(
                         "Track",
                         context,
-                        const CalendarScreen(),
+                        const PlantTrackerPage(),
                         CupertinoIcons.calendar,
                         'assets/images/track.png',
                       ),

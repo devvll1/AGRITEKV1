@@ -1,4 +1,4 @@
-// ignore_for_file: sort_child_properties_last
+// ignore_for_file: sort_child_properties_last, unnecessary_to_list_in_spreads
 
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -140,14 +140,14 @@ class _ViewMarketPriceState extends State<ViewMarketPrice> {
                                     Text(
                                       item['product_name'],
                                       style: const TextStyle(
-                                        fontSize: 15.0,
+                                        fontSize: 16.0,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
                                     Text(
                                       _formatDate(item['date']),
                                       style: const TextStyle(
-                                        fontSize: 11.0,
+                                        fontSize: 12.0,
                                         color: Colors.grey,
                                       ),
                                     ),
@@ -157,13 +157,15 @@ class _ViewMarketPriceState extends State<ViewMarketPrice> {
                                 Text(
                                   '${item['commodity']}',
                                   style: const TextStyle(
-                                    fontSize: 10.0,
+                                    fontSize: 12.0,
+                                    fontWeight: FontWeight.w500,
                                   ),
                                 ),
                                 Text(
                                   'Specification: ${item['specification']}',
                                   style: const TextStyle(
-                                    fontSize: 9.0,
+                                    fontSize: 12.0,
+                                    fontWeight: FontWeight.w500,
                                   ),
                                 ),
                                 const SizedBox(height: 12),

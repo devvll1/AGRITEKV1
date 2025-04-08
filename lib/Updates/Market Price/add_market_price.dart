@@ -1,7 +1,11 @@
+// ignore_for_file: use_build_context_synchronously, library_private_types_in_public_api
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AddMarketPrice extends StatefulWidget {
+  const AddMarketPrice({super.key});
+
   @override
   _AddMarketPriceState createState() => _AddMarketPriceState();
 }
@@ -47,7 +51,7 @@ class _AddMarketPriceState extends State<AddMarketPrice> {
           'date': _selectedDate!.toIso8601String(),
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Market price added successfully!')),
+          const SnackBar(content: Text('Market price added successfully!')),
         );
         _formKey.currentState!.reset();
         setState(() {
@@ -61,7 +65,7 @@ class _AddMarketPriceState extends State<AddMarketPrice> {
       }
     } else if (_selectedDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Please select a date')),
+        const SnackBar(content: Text('Please select a date')),
       );
     }
   }
@@ -84,7 +88,7 @@ class _AddMarketPriceState extends State<AddMarketPrice> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Add Market Price'),
+        title: const Text('Add Market Price'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -96,7 +100,7 @@ class _AddMarketPriceState extends State<AddMarketPrice> {
               children: [
                 DropdownButtonFormField<String>(
                   value: _selectedCommodity,
-                  decoration: InputDecoration(labelText: 'Commodity'),
+                  decoration: const InputDecoration(labelText: 'Commodity'),
                   items: _commodities.map((commodity) {
                     return DropdownMenuItem(
                       value: commodity,
@@ -117,7 +121,8 @@ class _AddMarketPriceState extends State<AddMarketPrice> {
                 ),
                 TextFormField(
                   controller: _productNameController,
-                  decoration: InputDecoration(labelText: 'Name of the Product'),
+                  decoration:
+                      const InputDecoration(labelText: 'Name of the Product'),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Please enter the product name';
@@ -127,7 +132,7 @@ class _AddMarketPriceState extends State<AddMarketPrice> {
                 ),
                 TextFormField(
                   controller: _specificationController,
-                  decoration: InputDecoration(labelText: 'Specification'),
+                  decoration: const InputDecoration(labelText: 'Specification'),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Please enter the specification';
@@ -137,7 +142,7 @@ class _AddMarketPriceState extends State<AddMarketPrice> {
                 ),
                 TextFormField(
                   controller: _highestPriceController,
-                  decoration: InputDecoration(labelText: 'Highest Price'),
+                  decoration: const InputDecoration(labelText: 'Highest Price'),
                   keyboardType: TextInputType.number,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -151,7 +156,7 @@ class _AddMarketPriceState extends State<AddMarketPrice> {
                 ),
                 TextFormField(
                   controller: _lowestPriceController,
-                  decoration: InputDecoration(labelText: 'Lowest Price'),
+                  decoration: const InputDecoration(labelText: 'Lowest Price'),
                   keyboardType: TextInputType.number,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -165,7 +170,8 @@ class _AddMarketPriceState extends State<AddMarketPrice> {
                 ),
                 TextFormField(
                   controller: _prevailingPriceController,
-                  decoration: InputDecoration(labelText: 'Prevailing Price'),
+                  decoration:
+                      const InputDecoration(labelText: 'Prevailing Price'),
                   keyboardType: TextInputType.number,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -177,7 +183,7 @@ class _AddMarketPriceState extends State<AddMarketPrice> {
                     return null;
                   },
                 ),
-                SizedBox(height: 16),
+                const SizedBox(height: 16),
                 Row(
                   children: [
                     Expanded(
@@ -190,14 +196,14 @@ class _AddMarketPriceState extends State<AddMarketPrice> {
                     ),
                     ElevatedButton(
                       onPressed: _pickDate,
-                      child: Text('Pick Date'),
+                      child: const Text('Pick Date'),
                     ),
                   ],
                 ),
-                SizedBox(height: 20),
+                const SizedBox(height: 20),
                 ElevatedButton(
                   onPressed: _saveToFirebase,
-                  child: Text('Save'),
+                  child: const Text('Save'),
                 ),
               ],
             ),

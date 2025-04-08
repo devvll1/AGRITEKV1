@@ -6,6 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import 'package:agritek/Forums/newpost.dart';
+import 'package:flutter/cupertino.dart';
 
 class ProfileFeedPage extends StatefulWidget {
   const ProfileFeedPage({super.key});
@@ -170,7 +171,7 @@ class _ProfileFeedPageState extends State<ProfileFeedPage> {
                               Row(
                                 children: [
                                   const Icon(
-                                    Icons.thumb_up,
+                                    CupertinoIcons.hand_thumbsup,
                                     color: Colors.blue,
                                     size: 16,
                                   ),
@@ -178,7 +179,7 @@ class _ProfileFeedPageState extends State<ProfileFeedPage> {
                                   Text('${likes.length} Likes'),
                                   const SizedBox(width: 16),
                                   const Icon(
-                                    Icons.comment,
+                                    CupertinoIcons.chat_bubble,
                                     color: Colors.grey,
                                     size: 16,
                                   ),
@@ -207,7 +208,7 @@ class _ProfileFeedPageState extends State<ProfileFeedPage> {
                 );
               },
               backgroundColor: Colors.green,
-              child: const Icon(Icons.add),
+              child: const Icon(CupertinoIcons.add),
             ),
     );
   }
