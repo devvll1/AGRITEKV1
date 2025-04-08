@@ -14,6 +14,7 @@ class ViewMarketPrice extends StatefulWidget {
 
 class _ViewMarketPriceState extends State<ViewMarketPrice> {
   String? _selectedCommodity;
+  String _searchQuery = ''; // Add a search query variable
   final List<String> _commodities = [
     'IMPORTED COMMERCIAL RICE',
     'LOCAL COMMERCIAL RICE',
@@ -40,6 +41,22 @@ class _ViewMarketPriceState extends State<ViewMarketPrice> {
           padding: const EdgeInsets.all(16.0),
           child: Column(
             children: [
+              // Search Bar
+              CupertinoTextField(
+                placeholder: 'Search by product name...',
+                onChanged: (value) {
+                  setState(() {
+                    _searchQuery = value.toLowerCase();
+                  });
+                },
+                padding: const EdgeInsets.all(12),
+                prefix: const Padding(
+                  padding: EdgeInsets.only(left: 8.0),
+                  child: Icon(CupertinoIcons.search),
+                ),
+              ),
+              const SizedBox(height: 16),
+              // Dropdown for filtering by commodity
               DropdownButtonFormField<String>(
                 value: _selectedCommodity,
                 decoration: InputDecoration(
@@ -72,6 +89,7 @@ class _ViewMarketPriceState extends State<ViewMarketPrice> {
                 },
               ),
               const SizedBox(height: 16),
+              // StreamBuilder for displaying data
               Expanded(
                 child: StreamBuilder<QuerySnapshot>(
                   stream: _selectedCommodity == null
@@ -89,7 +107,20 @@ class _ViewMarketPriceState extends State<ViewMarketPrice> {
                     if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                       return const Center(child: Text('No data available'));
                     }
-                    final data = snapshot.data!.docs;
+
+                    // Filter and sort data
+                    final data = snapshot.data!.docs
+                        .where((doc) => doc['product_name']
+                            .toString()
+                            .toLowerCase()
+                            .contains(_searchQuery))
+                        .toList()
+                      ..sort((a, b) => a['product_name']
+                          .toString()
+                          .toLowerCase()
+                          .compareTo(
+                              b['product_name'].toString().toLowerCase()));
+
                     return ListView.builder(
                       itemCount: data.length,
                       itemBuilder: (context, index) {
@@ -207,7 +238,7 @@ class _ViewMarketPriceState extends State<ViewMarketPrice> {
             MaterialPageRoute(builder: (context) => AddMarketPrice()),
           );
         },
-        child: const Icon(CupertinoIcons.add), // Changed to CupertinoIcons.add
+        child: const Icon(CupertinoIcons.add),
         tooltip: 'Add Market Price',
       ),
     );
