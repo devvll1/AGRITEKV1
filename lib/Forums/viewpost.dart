@@ -116,12 +116,27 @@ class _ViewPostPageState extends State<ViewPostPage> {
         final data = userDoc.data();
         final firstName = data?['firstName'] ?? 'Unknown';
         final lastName = data?['lastName'] ?? 'User';
+        final profileImageUrl = data?['profileImageUrl'] ?? '';
 
         setState(() {
           _authorFullName = '$firstName $lastName'; // Full name of the author
+          _authorProfileImageUrl = profileImageUrl.isNotEmpty
+              ? profileImageUrl
+              : 'assets/images/defaultprofile.png';
+        });
+      } else {
+        setState(() {
+          _authorFullName = 'Unknown Author';
+          _authorProfileImageUrl = 'assets/images/defaultprofile.png';
         });
       }
-    } catch (e) {}
+    } catch (e) {
+      setState(() {
+        _authorFullName = 'Unknown Author';
+        _authorProfileImageUrl = 'assets/images/defaultprofile.png';
+      });
+      debugPrint('Error fetching author profile: $e');
+    }
   }
 
   Future<void> _deletePost() async {
@@ -293,15 +308,76 @@ class _ViewPostPageState extends State<ViewPostPage> {
 
     try {
       if (currentLikes.contains(userId)) {
+        // Unlike the post
+        setState(() {
+          _hasLiked = false;
+          _postLikes.remove(userId); // Update the local state
+        });
+
         await postDoc.update({
           'likes': FieldValue.arrayRemove([userId]),
         });
       } else {
+        // Like the post
+        setState(() {
+          _hasLiked = true;
+          _postLikes.add(userId); // Update the local state
+        });
+
         await postDoc.update({
           'likes': FieldValue.arrayUnion([userId]),
         });
+
+        // Fetch the user's name
+        final userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(userId)
+            .get();
+
+        if (!userDoc.exists) {
+          debugPrint('User document does not exist');
+          return;
+        }
+
+        final userData = userDoc.data()!;
+        final firstName = userData['firstName'] ?? 'Unknown';
+        final lastName = userData['lastName'] ?? 'User';
+        final fullName = '$firstName $lastName';
+
+        // Add a notification for the post author
+        if (postAuthorId != userId) {
+          final notificationRef = FirebaseFirestore.instance
+              .collection('notifications')
+              .doc(postAuthorId)
+              .collection('userNotifications')
+              .doc();
+
+          await notificationRef.set({
+            'type': 'like',
+            'postId': postId,
+            'postTitle': postTitle,
+            'senderId': userId,
+            'senderName': fullName,
+            'timestamp': FieldValue.serverTimestamp(),
+            'isRead': false,
+          });
+
+          debugPrint('Notification added for like');
+        }
       }
-    } catch (e) {}
+    } catch (e) {
+      debugPrint('Error toggling like: $e');
+      // Revert the state if the operation fails
+      setState(() {
+        if (_hasLiked) {
+          _hasLiked = false;
+          _postLikes.remove(userId);
+        } else {
+          _hasLiked = true;
+          _postLikes.add(userId);
+        }
+      });
+    }
   }
 
   Future<void> _addComment(
@@ -472,39 +548,6 @@ class _ViewPostPageState extends State<ViewPostPage> {
         await commentRef.update({
           'likes': FieldValue.arrayUnion([userId]),
         });
-
-        // Fetch the comment's author ID
-        final commentSnapshot = await commentRef.get();
-        final commentData = commentSnapshot.data() as Map<String, dynamic>?;
-        final commentAuthorId = commentData?['userId'];
-
-        // Notify the comment's author
-        if (commentAuthorId != null && commentAuthorId != user.uid) {
-          final userDoc = await FirebaseFirestore.instance
-              .collection('users')
-              .doc(user.uid)
-              .get();
-
-          final userData = userDoc.data()!;
-          final userName =
-              '${userData['firstName'] ?? 'Unknown'} ${userData['lastName'] ?? 'User'}';
-
-          final notificationRef = FirebaseFirestore.instance
-              .collection('notifications')
-              .doc(commentAuthorId)
-              .collection('userNotifications')
-              .doc();
-
-          await notificationRef.set({
-            'type': 'like',
-            'postId': widget.postId,
-            'postTitle': widget.title,
-            'senderId': user.uid,
-            'senderName': userName,
-            'timestamp': FieldValue.serverTimestamp(),
-            'isRead': false,
-          });
-        }
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -560,8 +603,10 @@ class _ViewPostPageState extends State<ViewPostPage> {
               CupertinoButton(
                 child: const Text('Attach Image'),
                 onPressed: () async {
-                  // Implement image picker logic here
-                  // Set `imageUrl` to the uploaded image's URL
+                  final imageUrl = await _pickAndUploadImage();
+                  if (imageUrl != null) {
+                    replyController.text += '\n[Image Attached]';
+                  }
                 },
               ),
             ],
@@ -909,20 +954,15 @@ class _ViewPostPageState extends State<ViewPostPage> {
                                     ? CupertinoColors.activeBlue
                                     : CupertinoColors.inactiveGray,
                               ),
-                              onPressed: () => _togglePostLike(widget.postId,
-                                  _postLikes, widget.title, widget.author),
+                              onPressed: () => _togglePostLike(
+                                widget.postId,
+                                _postLikes,
+                                widget.title,
+                                widget.userId,
+                              ),
                             ),
-                            Text('${_postLikes.length} Likes'),
+                            Text('${_postLikes.length} likes'),
                           ],
-                        ),
-                        const Divider(),
-                        // Comments Section
-                        const Text(
-                          'Comments',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
                         ),
                         const SizedBox(height: 8),
                         StreamBuilder<QuerySnapshot>(
@@ -1283,6 +1323,28 @@ class _ViewPostPageState extends State<ViewPostPage> {
                                                                     height: 100,
                                                                     fit: BoxFit
                                                                         .cover,
+                                                                    loadingBuilder:
+                                                                        (context,
+                                                                            child,
+                                                                            loadingProgress) {
+                                                                      if (loadingProgress ==
+                                                                          null)
+                                                                        return child;
+                                                                      return const Center(
+                                                                        child:
+                                                                            CircularProgressIndicator(),
+                                                                      );
+                                                                    },
+                                                                    errorBuilder: (context,
+                                                                            error,
+                                                                            stackTrace) =>
+                                                                        const Icon(
+                                                                      Icons
+                                                                          .broken_image,
+                                                                      color: Colors
+                                                                          .grey,
+                                                                      size: 50,
+                                                                    ),
                                                                   ),
                                                                 ),
                                                               const SizedBox(
@@ -1300,94 +1362,85 @@ class _ViewPostPageState extends State<ViewPostPage> {
                                                                   height: 8),
                                                               Row(
                                                                 children: [
-                                                                  GestureDetector(
-                                                                    onTap: () =>
-                                                                        _toggleCommentLike(
+                                                                  Row(
+                                                                    children: [
+                                                                      GestureDetector(
+                                                                        onTap: () => _toggleCommentLike(
                                                                             reply.reference,
                                                                             replyLikes),
-                                                                    child: Icon(
-                                                                      replyLikes.contains(FirebaseAuth
+                                                                        child:
+                                                                            Icon(
+                                                                          replyLikes.contains(FirebaseAuth.instance.currentUser?.uid)
+                                                                              ? CupertinoIcons.heart_fill
+                                                                              : CupertinoIcons.heart,
+                                                                          color: replyLikes.contains(FirebaseAuth.instance.currentUser?.uid)
+                                                                              ? CupertinoColors.systemRed
+                                                                              : CupertinoColors.inactiveGray,
+                                                                          size:
+                                                                              18,
+                                                                        ),
+                                                                      ),
+                                                                      const SizedBox(
+                                                                          width:
+                                                                              4),
+                                                                      Text(
+                                                                          '${replyLikes.length}'),
+                                                                      const SizedBox(
+                                                                          width:
+                                                                              16),
+                                                                      GestureDetector(
+                                                                        onTap: () =>
+                                                                            _replyToComment(reply.reference),
+                                                                        child:
+                                                                            const Icon(
+                                                                          CupertinoIcons
+                                                                              .reply,
+                                                                          color:
+                                                                              CupertinoColors.activeBlue,
+                                                                          size:
+                                                                              18,
+                                                                        ),
+                                                                      ),
+                                                                      if (FirebaseAuth
                                                                               .instance
                                                                               .currentUser
-                                                                              ?.uid)
-                                                                          ? CupertinoIcons
-                                                                              .heart_fill
-                                                                          : CupertinoIcons
-                                                                              .heart,
-                                                                      color: replyLikes.contains(FirebaseAuth
-                                                                              .instance
-                                                                              .currentUser
-                                                                              ?.uid)
-                                                                          ? CupertinoColors
-                                                                              .systemRed
-                                                                          : CupertinoColors
-                                                                              .inactiveGray,
-                                                                      size: 18,
-                                                                    ),
-                                                                  ),
-                                                                  const SizedBox(
-                                                                      width: 4),
-                                                                  Text(
-                                                                      '${replyLikes.length}'),
-                                                                  const SizedBox(
-                                                                      width:
-                                                                          16),
-                                                                  GestureDetector(
-                                                                    onTap: () =>
-                                                                        _replyToComment(
-                                                                            reply.reference),
-                                                                    child:
-                                                                        const Icon(
-                                                                      CupertinoIcons
-                                                                          .reply,
-                                                                      color: CupertinoColors
-                                                                          .activeBlue,
-                                                                      size: 18,
-                                                                    ),
-                                                                  ),
-                                                                  if (FirebaseAuth
-                                                                          .instance
-                                                                          .currentUser
-                                                                          ?.uid ==
-                                                                      replyData[
-                                                                          'userId']) ...[
-                                                                    const SizedBox(
-                                                                        width:
-                                                                            16),
-                                                                    GestureDetector(
-                                                                      onTap: () => _editComment(
-                                                                          reply
-                                                                              .reference,
+                                                                              ?.uid ==
                                                                           replyData[
-                                                                              'text']),
-                                                                      child:
-                                                                          const Icon(
-                                                                        CupertinoIcons
-                                                                            .pencil,
-                                                                        color: CupertinoColors
-                                                                            .activeBlue,
-                                                                        size:
-                                                                            18,
-                                                                      ),
-                                                                    ),
-                                                                    const SizedBox(
-                                                                        width:
-                                                                            8),
-                                                                    GestureDetector(
-                                                                      onTap: () =>
-                                                                          _deleteComment(
-                                                                              reply.reference),
-                                                                      child:
-                                                                          const Icon(
-                                                                        CupertinoIcons
-                                                                            .delete,
-                                                                        color: CupertinoColors
-                                                                            .destructiveRed,
-                                                                        size:
-                                                                            18,
-                                                                      ),
-                                                                    ),
-                                                                  ],
+                                                                              'userId']) ...[
+                                                                        const SizedBox(
+                                                                            width:
+                                                                                16),
+                                                                        GestureDetector(
+                                                                          onTap: () => _editComment(
+                                                                              reply.reference,
+                                                                              replyData['text']),
+                                                                          child:
+                                                                              const Icon(
+                                                                            CupertinoIcons.pencil,
+                                                                            color:
+                                                                                CupertinoColors.activeBlue,
+                                                                            size:
+                                                                                18,
+                                                                          ),
+                                                                        ),
+                                                                        const SizedBox(
+                                                                            width:
+                                                                                8),
+                                                                        GestureDetector(
+                                                                          onTap: () =>
+                                                                              _deleteComment(reply.reference),
+                                                                          child:
+                                                                              const Icon(
+                                                                            CupertinoIcons.delete,
+                                                                            color:
+                                                                                CupertinoColors.destructiveRed,
+                                                                            size:
+                                                                                18,
+                                                                          ),
+                                                                        ),
+                                                                      ],
+                                                                    ],
+                                                                  ),
                                                                 ],
                                                               ),
                                                             ],

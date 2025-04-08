@@ -1,4 +1,4 @@
-// ignore_for_file: prefer_const_constructors, use_build_context_synchronously, library_private_types_in_public_api
+// ignore_for_file: prefer_const_constructors, use_build_context_synchronously, library_private_types_in_public_api, unnecessary_string_interpolations, avoid_types_as_parameter_names, prefer_const_declarations, unused_element, unused_import, empty_catches
 
 import 'package:agritek/Forums/newpost.dart';
 import 'package:agritek/Forums/notifications.dart';

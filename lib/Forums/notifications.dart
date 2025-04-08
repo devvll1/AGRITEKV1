@@ -1,6 +1,5 @@
-// ignore_for_file: unused_element
+// ignore_for_file: unused_element, unused_import, use_build_context_synchronously
 
-import 'package:agritek/Forums/postdetails.dart';
 import 'package:agritek/Forums/viewpost.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
