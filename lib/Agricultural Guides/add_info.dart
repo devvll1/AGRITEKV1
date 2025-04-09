@@ -1,4 +1,4 @@
-// ignore_for_file: unnecessary_null_comparison
+// ignore_for_file: unnecessary_null_comparison, library_private_types_in_public_api, use_build_context_synchronously, unnecessary_to_list_in_spreads
 
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -7,7 +7,7 @@ import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 
 class AddInformationForm extends StatefulWidget {
-  const AddInformationForm({Key? key}) : super(key: key);
+  const AddInformationForm({super.key});
 
   @override
   _AddInformationFormState createState() => _AddInformationFormState();
@@ -58,7 +58,6 @@ class _AddInformationFormState extends State<AddInformationForm> {
       await ref.putFile(imageFile);
       return await ref.getDownloadURL();
     } catch (e) {
-      print("Image upload failed: $e");
       return null;
     }
   }

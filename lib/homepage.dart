@@ -1,7 +1,8 @@
-// ignore_for_file: prefer_const_constructors
+// ignore_for_file: prefer_const_constructors, unused_element, use_build_context_synchronously, deprecated_member_use
 
 import 'package:agritek/Agricultural%20Guides/add_info.dart';
 import 'package:agritek/Agricultural%20Guides/view_guides.dart';
+import 'package:agritek/Track/Plant%20Tracker/view_plant_tracker.dart';
 import 'package:agritek/Updates/Market%20Price/view_market_price.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -9,7 +10,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:agritek/Forums/forumfeed.dart';
 import 'package:agritek/Login/profile.dart';
-import 'package:agritek/Track/calendar.dart';
 import 'package:agritek/Updates/Weather/weather.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
@@ -145,7 +145,6 @@ class _HomePageState extends State<HomePage> {
       setState(() {
         weatherCondition = 'Error fetching weather: $e';
       });
-      print(e);
     }
   }
 
@@ -217,7 +216,6 @@ class _HomePageState extends State<HomePage> {
               onPressed: () {
                 Navigator.pop(context);
                 // Add any other option you need
-                print("Option 2 selected");
               },
               child: const Text("Option 2",
                   style: TextStyle(fontFamily: 'Poppins')),
@@ -318,9 +316,7 @@ class _HomePageState extends State<HomePage> {
                         CupertinoPageRoute(
                             builder: (context) => const AddInformationForm()),
                       );
-                    } else {
-                      print("Option 2 selected");
-                    }
+                    } else {}
                   },
                   itemBuilder: (BuildContext context) {
                     return [
@@ -524,7 +520,7 @@ class _HomePageState extends State<HomePage> {
                       _buildMenuButton(
                         "Track",
                         context,
-                        const PlantTrackerPage(),
+                        const CalendarScreen(),
                         CupertinoIcons.calendar,
                         'assets/images/track.png',
                       ),

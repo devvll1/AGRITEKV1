@@ -49,6 +49,8 @@ dependencies:
   flutter_local_notifications: ^18.0.1
   timeline_tile: ^2.0.0
   flutter_quill: ^11.1.2
+  firebase_messaging: ^15.2.5
+  flutter_speed_dial: ^7.0.0
 
 dev_dependencies:
   flutter_test:
@@ -64,7 +66,6 @@ dev_dependencies:
 
 flutter_icons:
   android: true
-  ios: true
   image_path: "assets/icon/agritek.png"
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

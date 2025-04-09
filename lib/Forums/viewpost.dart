@@ -1,4 +1,4 @@
-// ignore_for_file: use_build_context_synchronously, must_be_immutable
+// ignore_for_file: use_build_context_synchronously, must_be_immutable, empty_catches
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -240,20 +240,28 @@ class _ViewPostPageState extends State<ViewPostPage> {
         final data = userDoc.data();
         final profileImageUrl = data?['profileImageUrl'] ?? '';
 
-        setState(() {
-          _authorProfileImageUrl = profileImageUrl.isNotEmpty
-              ? profileImageUrl
-              : 'assets/images/defaultprofile.png';
-        });
+        // Ensure the fetched profile belongs to the correct user
+        if (mounted && userId == widget.userId) {
+          setState(() {
+            _authorProfileImageUrl = profileImageUrl.isNotEmpty
+                ? profileImageUrl
+                : 'assets/images/defaultprofile.png';
+          });
+        }
       } else {
+        if (mounted && userId == widget.userId) {
+          setState(() {
+            _authorProfileImageUrl = 'assets/images/defaultprofile.png';
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted && userId == widget.userId) {
         setState(() {
           _authorProfileImageUrl = 'assets/images/defaultprofile.png';
         });
       }
-    } catch (e) {
-      setState(() {
-        _authorProfileImageUrl = 'assets/images/defaultprofile.png';
-      });
+      debugPrint('Error fetching author profile: $e');
     }
   }
 
@@ -320,13 +328,7 @@ class _ViewPostPageState extends State<ViewPostPage> {
 
         // Notify the post author
         if (postAuthorId != userId) {
-          final notificationRef = FirebaseFirestore.instance
-              .collection('notifications')
-              .doc(postAuthorId)
-              .collection('userNotifications')
-              .doc();
-
-          await notificationRef.set({
+          final notificationData = {
             'type': 'like',
             'postId': postId,
             'postTitle': postTitle,
@@ -334,7 +336,23 @@ class _ViewPostPageState extends State<ViewPostPage> {
             'senderName': user.displayName ?? 'Unknown User',
             'timestamp': FieldValue.serverTimestamp(),
             'isRead': false,
-          });
+          };
+
+          // Write to the user's subcollection
+          final notificationRef = FirebaseFirestore.instance
+              .collection('notifications')
+              .doc(postAuthorId)
+              .collection('userNotifications')
+              .doc();
+
+          await notificationRef.set(notificationData);
+
+          // Write to the flat collection
+          final flatNotificationRef = FirebaseFirestore.instance
+              .collection('userNotifications_flat')
+              .doc(notificationRef.id);
+
+          await flatNotificationRef.set(notificationData);
         }
       }
     } catch (e) {
@@ -398,13 +416,7 @@ class _ViewPostPageState extends State<ViewPostPage> {
 
       // Notify the post author
       if (postAuthorId != user.uid) {
-        final notificationRef = FirebaseFirestore.instance
-            .collection('notifications')
-            .doc(postAuthorId)
-            .collection('userNotifications')
-            .doc();
-
-        await notificationRef.set({
+        final notificationData = {
           'type': 'comment',
           'postId': postId,
           'postTitle': postTitle,
@@ -413,7 +425,23 @@ class _ViewPostPageState extends State<ViewPostPage> {
           'comment': comment,
           'timestamp': FieldValue.serverTimestamp(),
           'isRead': false,
-        });
+        };
+
+        // Write to the user's subcollection
+        final notificationRef = FirebaseFirestore.instance
+            .collection('notifications')
+            .doc(postAuthorId)
+            .collection('userNotifications')
+            .doc();
+
+        await notificationRef.set(notificationData);
+
+        // Write to the flat collection
+        final flatNotificationRef = FirebaseFirestore.instance
+            .collection('userNotifications_flat')
+            .doc(notificationRef.id);
+
+        await flatNotificationRef.set(notificationData);
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -539,13 +567,7 @@ class _ViewPostPageState extends State<ViewPostPage> {
         final commentAuthorId = commentData['userId'];
 
         if (commentAuthorId != userId) {
-          final notificationRef = FirebaseFirestore.instance
-              .collection('notifications')
-              .doc(commentAuthorId)
-              .collection('userNotifications')
-              .doc();
-
-          await notificationRef.set({
+          final notificationData = {
             'type': 'like',
             'postId': widget.postId,
             'postTitle': widget.title,
@@ -553,7 +575,23 @@ class _ViewPostPageState extends State<ViewPostPage> {
             'senderName': user.displayName ?? 'Unknown User',
             'timestamp': FieldValue.serverTimestamp(),
             'isRead': false,
-          });
+          };
+
+          // Write to the user's subcollection
+          final notificationRef = FirebaseFirestore.instance
+              .collection('notifications')
+              .doc(commentAuthorId)
+              .collection('userNotifications')
+              .doc();
+
+          await notificationRef.set(notificationData);
+
+          // Write to the flat collection
+          final flatNotificationRef = FirebaseFirestore.instance
+              .collection('userNotifications_flat')
+              .doc(notificationRef.id);
+
+          await flatNotificationRef.set(notificationData);
         }
       }
     } catch (e) {
@@ -656,13 +694,7 @@ class _ViewPostPageState extends State<ViewPostPage> {
 
       // Notify the original reply's author
       if (parentAuthorId != user.uid) {
-        final notificationRef = FirebaseFirestore.instance
-            .collection('notifications')
-            .doc(parentAuthorId)
-            .collection('userNotifications')
-            .doc();
-
-        await notificationRef.set({
+        final notificationData = {
           'type': 'reply',
           'postId': widget.postId,
           'postTitle': widget.title,
@@ -671,7 +703,23 @@ class _ViewPostPageState extends State<ViewPostPage> {
           'comment': reply['text'],
           'timestamp': FieldValue.serverTimestamp(),
           'isRead': false,
-        });
+        };
+
+        // Write to the user's subcollection
+        final notificationRef = FirebaseFirestore.instance
+            .collection('notifications')
+            .doc(parentAuthorId)
+            .collection('userNotifications')
+            .doc();
+
+        await notificationRef.set(notificationData);
+
+        // Write to the flat collection
+        final flatNotificationRef = FirebaseFirestore.instance
+            .collection('userNotifications_flat')
+            .doc(notificationRef.id);
+
+        await flatNotificationRef.set(notificationData);
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -756,6 +804,21 @@ class _ViewPostPageState extends State<ViewPostPage> {
               .doc();
 
           await notificationRef.set({
+            'type': 'like',
+            'postId': widget.postId,
+            'postTitle': widget.title,
+            'senderId': userId,
+            'senderName': user.displayName ?? 'Unknown User',
+            'timestamp': FieldValue.serverTimestamp(),
+            'isRead': false,
+          });
+
+          // Write to the flat collection
+          final flatNotificationRef = FirebaseFirestore.instance
+              .collection('userNotifications_flat')
+              .doc(notificationRef.id);
+
+          await flatNotificationRef.set({
             'type': 'like',
             'postId': widget.postId,
             'postTitle': widget.title,
@@ -1356,8 +1419,9 @@ class _ViewPostPageState extends State<ViewPostPage> {
                                                             child,
                                                             loadingProgress) {
                                                           if (loadingProgress ==
-                                                              null)
+                                                              null) {
                                                             return child;
+                                                          }
                                                           return const Center(
                                                               child:
                                                                   CircularProgressIndicator());

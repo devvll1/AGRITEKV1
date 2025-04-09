@@ -127,13 +127,7 @@ class _ForumsPageState extends State<ForumsPage> {
 
         // Add a notification for the post author
         if (postAuthorId != userId) {
-          final notificationRef = FirebaseFirestore.instance
-              .collection('notifications')
-              .doc(postAuthorId)
-              .collection('userNotifications')
-              .doc();
-
-          await notificationRef.set({
+          final notificationData = {
             'type': 'like',
             'postId': postId,
             'postTitle': postTitle,
@@ -141,7 +135,23 @@ class _ForumsPageState extends State<ForumsPage> {
             'senderName': fullName,
             'timestamp': FieldValue.serverTimestamp(),
             'isRead': false,
-          });
+          };
+
+          // Write to the user's subcollection
+          final notificationRef = FirebaseFirestore.instance
+              .collection('notifications')
+              .doc(postAuthorId)
+              .collection('userNotifications')
+              .doc();
+
+          await notificationRef.set(notificationData);
+
+          // Write to the flat collection
+          final flatNotificationRef = FirebaseFirestore.instance
+              .collection('userNotifications_flat')
+              .doc(notificationRef.id);
+
+          await flatNotificationRef.set(notificationData);
 
           debugPrint('Notification added for like');
         }
@@ -197,13 +207,7 @@ class _ForumsPageState extends State<ForumsPage> {
 
       // Add a notification for the post author
       if (postAuthorId != user!.uid) {
-        final notificationRef = FirebaseFirestore.instance
-            .collection('notifications')
-            .doc(postAuthorId)
-            .collection('userNotifications')
-            .doc();
-
-        await notificationRef.set({
+        final notificationData = {
           'type': 'comment',
           'postId': postId,
           'postTitle': postTitle,
@@ -212,7 +216,23 @@ class _ForumsPageState extends State<ForumsPage> {
           'comment': comment,
           'timestamp': FieldValue.serverTimestamp(),
           'isRead': false,
-        });
+        };
+
+        // Write to the user's subcollection
+        final notificationRef = FirebaseFirestore.instance
+            .collection('notifications')
+            .doc(postAuthorId)
+            .collection('userNotifications')
+            .doc();
+
+        await notificationRef.set(notificationData);
+
+        // Write to the flat collection
+        final flatNotificationRef = FirebaseFirestore.instance
+            .collection('userNotifications_flat')
+            .doc(notificationRef.id);
+
+        await flatNotificationRef.set(notificationData);
 
         debugPrint('Notification added for comment');
       }

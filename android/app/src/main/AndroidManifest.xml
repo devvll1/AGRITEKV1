@@ -1,7 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.agritek.app">
     <application
-        android:label="agritek"
+        android:label="AgriTek"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:agritek/homepage.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -251,7 +253,7 @@ class _StartupPageState extends State<StartupPage>
                       style: const TextStyle(fontSize: 16, color: Colors.white),
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 10),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -279,7 +281,7 @@ class _StartupPageState extends State<StartupPage>
                       ),
                     ],
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 15),
                   ElevatedButton(
                     onPressed: skipLogin,
                     style: ElevatedButton.styleFrom(
@@ -288,7 +290,7 @@ class _StartupPageState extends State<StartupPage>
                         borderRadius: BorderRadius.circular(30),
                       ),
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 50, vertical: 15),
+                          horizontal: 25, vertical: 15),
                     ),
                     child: const Text(
                       'Continue Without Logging In',

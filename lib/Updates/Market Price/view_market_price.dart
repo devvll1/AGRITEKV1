@@ -1,4 +1,4 @@
-// ignore_for_file: sort_child_properties_last, unnecessary_to_list_in_spreads
+// ignore_for_file: sort_child_properties_last, unnecessary_to_list_in_spreads, library_private_types_in_public_api
 
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -237,7 +237,7 @@ class _ViewMarketPriceState extends State<ViewMarketPrice> {
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => AddMarketPrice()),
+            MaterialPageRoute(builder: (context) => const AddMarketPrice()),
           );
         },
         child: const Icon(CupertinoIcons.add),
