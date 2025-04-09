@@ -2,6 +2,9 @@
 
 import 'package:agritek/Agricultural%20Guides/add_info.dart';
 import 'package:agritek/Agricultural%20Guides/view_guides.dart';
+import 'package:agritek/General/about_us.dart';
+import 'package:agritek/General/privacy_policy.dart';
+import 'package:agritek/General/terms_and_conditions.dart';
 import 'package:agritek/Track/Plant%20Tracker/view_plant_tracker.dart';
 import 'package:agritek/Updates/Market%20Price/view_market_price.dart';
 import 'package:flutter/cupertino.dart';
@@ -316,7 +319,26 @@ class _HomePageState extends State<HomePage> {
                         CupertinoPageRoute(
                             builder: (context) => const AddInformationForm()),
                       );
-                    } else {}
+                    } else if (value == 'aboutUs') {
+                      Navigator.push(
+                        context,
+                        CupertinoPageRoute(
+                            builder: (context) => const AboutUsPage()),
+                      );
+                    } else if (value == 'termsAndConditions') {
+                      Navigator.push(
+                        context,
+                        CupertinoPageRoute(
+                            builder: (context) =>
+                                const TermsAndConditionsPage()),
+                      );
+                    } else if (value == 'privacyPolicy') {
+                      Navigator.push(
+                        context,
+                        CupertinoPageRoute(
+                            builder: (context) => const PrivacyPolicyPage()),
+                      );
+                    }
                   },
                   itemBuilder: (BuildContext context) {
                     return [
@@ -328,6 +350,21 @@ class _HomePageState extends State<HomePage> {
                       const PopupMenuItem<String>(
                         value: 'addInformation',
                         child: Text("Add Information",
+                            style: TextStyle(fontFamily: 'Poppins')),
+                      ),
+                      const PopupMenuItem<String>(
+                        value: 'aboutUs',
+                        child: Text("About Us",
+                            style: TextStyle(fontFamily: 'Poppins')),
+                      ),
+                      const PopupMenuItem<String>(
+                        value: 'termsAndConditions',
+                        child: Text("Terms and Conditions",
+                            style: TextStyle(fontFamily: 'Poppins')),
+                      ),
+                      const PopupMenuItem<String>(
+                        value: 'privacyPolicy',
+                        child: Text("Privacy Policy",
                             style: TextStyle(fontFamily: 'Poppins')),
                       ),
                       const PopupMenuItem<String>(
