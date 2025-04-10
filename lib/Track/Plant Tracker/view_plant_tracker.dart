@@ -9,6 +9,10 @@ import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:agritek/Track/Plant%20Tracker/addplant.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:timezone/data/latest.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
+import 'package:flutter/foundation.dart';
 
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key});
@@ -23,20 +27,38 @@ class _CalendarScreenState extends State<CalendarScreen> {
   late DateTime _focusedDay;
   Map<DateTime, List<String>> _events = {};
   Map<String, List<Map<String, dynamic>>> _plantData = {}; // Store plant data
+  late FlutterLocalNotificationsPlugin _localNotifications;
 
   @override
   void initState() {
     super.initState();
+    _initializeNotifications();
     _selectedDay = DateTime.now();
     _focusedDay = DateTime.now();
     _selectedEvents = ValueNotifier([]);
     _loadNotes();
-    _fetchPlantsFromDatabase(); // Fetch plants from Firestore
+    _fetchPlantsFromDatabase();
 
     // Check for today's reminders after the first frame renders
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkForTodayReminder();
     });
+  }
+
+  void _initializeNotifications() {
+    _localNotifications = FlutterLocalNotificationsPlugin();
+
+    const AndroidInitializationSettings androidSettings =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
+    const InitializationSettings initSettings =
+        InitializationSettings(android: androidSettings);
+
+    _localNotifications.initialize(
+      initSettings,
+      onDidReceiveNotificationResponse: (NotificationResponse response) {
+        // Handle notification tap (optional)
+      },
+    );
   }
 
   @override
@@ -179,19 +201,19 @@ class _CalendarScreenState extends State<CalendarScreen> {
               _showPlantSelectionDialog(); // Opens the plant selection dialog
             },
           ),
-          // SpeedDialChild(
-          //   child: const Icon(Icons.add_circle),
-          //   label: 'Add Plant',
-          //   backgroundColor: Colors.green,
-          //   onTap: () {
-          //     Navigator.push(
-          //       context,
-          //       MaterialPageRoute(
-          //         builder: (context) => const PlantTrackerPage(),
-          //       ),
-          //     );
-          //   },
-          // ),
+          SpeedDialChild(
+            child: const Icon(Icons.add_circle),
+            label: 'Add Plant',
+            backgroundColor: Colors.green,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const PlantTrackerPage(),
+                ),
+              );
+            },
+          ),
           SpeedDialChild(
             child: const Icon(Icons.info),
             label: 'View Seasons',
@@ -206,20 +228,20 @@ class _CalendarScreenState extends State<CalendarScreen> {
               );
             },
           ),
-          // SpeedDialChild(
-          //   child: const Icon(Icons.add_box),
-          //   label: 'Add Season',
-          //   backgroundColor: const Color.fromARGB(255, 243, 160, 36),
-          //   onTap: () {
-          //     Navigator.push(
-          //       context,
-          //       MaterialPageRoute(
-          //         builder: (context) =>
-          //             const AddSeasonInfo(), // Ensure ViewSeasons is imported
-          //       ),
-          //     );
-          //   },
-          // ),
+          SpeedDialChild(
+            child: const Icon(Icons.add_box),
+            label: 'Add Season',
+            backgroundColor: const Color.fromARGB(255, 243, 160, 36),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      const AddSeasonInfo(), // Ensure ViewSeasons is imported
+                ),
+              );
+            },
+          ),
         ],
       ),
     );
@@ -330,37 +352,45 @@ class _CalendarScreenState extends State<CalendarScreen> {
     }
   }
 
-  void _addPlantEventsFromFirestore(Map<String, dynamic> plant) {
+  void _addPlantEventsFromFirestore(Map<String, dynamic> plant) async {
     final plantingDate =
         DateTime(_selectedDay.year, _selectedDay.month, _selectedDay.day);
 
-    final String plantName = plant['plantName'];
-    final String cropType = plant['category'];
-    final List<dynamic> events = plant['events'];
+    final processedEvents = await _processPlantEvents(plant, plantingDate);
 
-    for (var task in events) {
-      final eventDate =
-          plantingDate.add(Duration(days: task['daysAfterPlanting']));
-      final normalizedDate =
-          DateTime(eventDate.year, eventDate.month, eventDate.day);
+    setState(() {
+      _events.addAll(processedEvents);
+      _selectedEvents.value = _events[plantingDate] ?? [];
+    });
+    await _saveNotes();
+  }
 
-      if (_events[normalizedDate] == null) {
-        _events[normalizedDate] = [];
-      }
+  void _scheduleNotification({
+    required int id,
+    required String title,
+    required String body,
+    required DateTime scheduledDate,
+  }) {
+    const androidDetails = AndroidNotificationDetails(
+      'plant_tracker_channel',
+      'Plant Tracker Notifications',
+      channelDescription: 'Notifications for plant tracking events',
+      importance: Importance.high,
+      priority: Priority.high,
+    );
 
-      // Add event details to the calendar
-      _events[normalizedDate]!.add(
-        '$plantName\n'
-        '$cropType\n\n'
-        'Event: ${task['event']}\n\n'
-        'Note: ${task['note']}',
-      );
-    }
+    const notificationDetails = NotificationDetails(android: androidDetails);
 
-    // Update selected events and save notes
-    _selectedEvents.value = _events[plantingDate] ?? [];
-    _saveNotes();
-    setState(() {});
+    _localNotifications.zonedSchedule(
+      id,
+      title,
+      body,
+      tz.TZDateTime.from(scheduledDate, tz.local),
+      notificationDetails,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+    );
   }
 
   Future<void> _saveNotes() async {
@@ -392,6 +422,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
   }
 
   void _showNotesDialog(DateTime date, List<String> notes) {
+    TextEditingController personalNoteController = TextEditingController();
+
     showDialog(
       context: context,
       builder: (context) {
@@ -410,55 +442,81 @@ class _CalendarScreenState extends State<CalendarScreen> {
             child: SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: notes
-                    .asMap()
-                    .entries
-                    .map((entry) => Card(
-                          color:
-                              Colors.green[100], // Light green card background
-                          margin: const EdgeInsets.symmetric(vertical: 5),
-                          child: Padding(
-                            padding: const EdgeInsets.all(7.0), // Add padding
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    entry.value,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w500,
-                                      fontSize: 14,
-                                      wordSpacing: 1,
-                                      color: Colors.brown, // Earthy brown text
-                                    ),
-                                  ),
+                children: [
+                  ...notes.asMap().entries.map((entry) {
+                    TextEditingController editController =
+                        TextEditingController(text: entry.value);
+
+                    return Card(
+                      color: Colors.green[100], // Light green card background
+                      margin: const EdgeInsets.symmetric(vertical: 5),
+                      child: Padding(
+                        padding: const EdgeInsets.all(7.0), // Add padding
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: editController,
+                                maxLines: null,
+                                decoration: const InputDecoration(
+                                  border: InputBorder.none,
                                 ),
-                                IconButton(
-                                  icon: const Icon(Icons.delete,
-                                      color: Colors.red),
-                                  iconSize: 18, // Smaller icon size
-                                  constraints: const BoxConstraints(
-                                    minWidth: 30, // Reduce button width
-                                    minHeight: 30, // Reduce button height
-                                  ),
-                                  padding: EdgeInsets
-                                      .zero, // Remove internal padding
-                                  onPressed: () {
-                                    _removeNoteForDate(date, entry.key);
-                                    Navigator.pop(context);
-                                    _showNotesDialog(date, _events[date] ?? []);
-                                  },
-                                  tooltip: 'Delete Note',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 14,
+                                  wordSpacing: 1,
+                                  color: Colors.brown, // Earthy brown text
                                 ),
-                              ],
+                                onSubmitted: (newValue) {
+                                  _editNoteForDate(date, entry.key, newValue);
+                                },
+                              ),
                             ),
-                          ),
-                        ))
-                    .toList(),
+                            IconButton(
+                              icon: const Icon(Icons.delete, color: Colors.red),
+                              iconSize: 18, // Smaller icon size
+                              constraints: const BoxConstraints(
+                                minWidth: 30, // Reduce button width
+                                minHeight: 30, // Reduce button height
+                              ),
+                              padding:
+                                  EdgeInsets.zero, // Remove internal padding
+                              onPressed: () {
+                                _removeNoteForDate(date, entry.key);
+                              },
+                              tooltip: 'Delete Note',
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: personalNoteController,
+                    decoration: const InputDecoration(
+                      labelText: 'Add Personal Note',
+                      prefixIcon: Icon(Icons.note_add),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
           actions: [
+            TextButton(
+              onPressed: () {
+                if (personalNoteController.text.isNotEmpty) {
+                  _addPersonalNoteForDate(date, personalNoteController.text);
+                }
+                Navigator.pop(context);
+              },
+              child: const Text(
+                'Add Note',
+                style: TextStyle(color: Colors.green),
+              ),
+            ),
             TextButton(
               onPressed: () {
                 _removeAllNotesForDate(date);
@@ -482,18 +540,76 @@ class _CalendarScreenState extends State<CalendarScreen> {
     );
   }
 
-  void _removeNoteForDate(DateTime date, int index) {
+  void _editNoteForDate(DateTime date, int index, String newValue) {
     final normalizedDate = DateTime(date.year, date.month, date.day);
     if (_events[normalizedDate] != null &&
         _events[normalizedDate]!.isNotEmpty) {
-      _events[normalizedDate]!.removeAt(index);
-      if (_events[normalizedDate]!.isEmpty) {
-        _events.remove(normalizedDate); // Remove the date if no notes remain
-      }
+      _events[normalizedDate]![index] = newValue;
       _saveNotes(); // Save updated notes to SharedPreferences
       setState(() {
         _selectedEvents.value = _events[_selectedDay] ?? [];
       });
+    }
+  }
+
+  void _addPersonalNoteForDate(DateTime date, String note) {
+    final normalizedDate = DateTime(date.year, date.month, date.day);
+    if (_events[normalizedDate] == null) {
+      _events[normalizedDate] = [];
+    }
+    _events[normalizedDate]!.add(note);
+    _saveNotes(); // Save updated notes to SharedPreferences
+    setState(() {
+      _selectedEvents.value = _events[_selectedDay] ?? [];
+    });
+  }
+
+  void _removeNoteForDate(DateTime date, int index) {
+    final normalizedDate = DateTime(date.year, date.month, date.day);
+
+    if (_events[normalizedDate] != null &&
+        _events[normalizedDate]!.isNotEmpty) {
+      // Show confirmation dialog
+      showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: const Text('Delete Note'),
+            content: const Text('Are you sure you want to delete this note?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context), // Cancel deletion
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () {
+                  // Proceed with deletion
+                  _events[normalizedDate]!.removeAt(index);
+                  if (_events[normalizedDate]!.isEmpty) {
+                    _events.remove(
+                        normalizedDate); // Remove the date if no notes remain
+                  }
+                  _saveNotes(); // Save updated notes to SharedPreferences
+                  setState(() {
+                    _selectedEvents.value = _events[_selectedDay] ?? [];
+                  });
+
+                  // Refresh the dialog with updated notes
+                  Navigator.pop(context); // Close the confirmation dialog
+                  Navigator.pop(context); // Close the current notes dialog
+                  Future.delayed(const Duration(milliseconds: 100), () {
+                    _showNotesDialog(date, _events[normalizedDate] ?? []);
+                  });
+                },
+                child: const Text(
+                  'Delete',
+                  style: TextStyle(color: Colors.red),
+                ),
+              ),
+            ],
+          );
+        },
+      );
     }
   }
 
@@ -637,4 +753,41 @@ class _CalendarScreenState extends State<CalendarScreen> {
       },
     );
   }
+}
+
+Future<Map<DateTime, List<String>>> _processPlantEvents(
+    Map<String, dynamic> plant, DateTime plantingDate) async {
+  return compute(
+      _processEvents, {'plant': plant, 'plantingDate': plantingDate});
+}
+
+Map<DateTime, List<String>> _processEvents(Map<String, dynamic> data) {
+  final plant = data['plant'] as Map<String, dynamic>;
+  final plantingDate = data['plantingDate'] as DateTime;
+
+  final String plantName = plant['plantName'];
+  final String cropType = plant['category'];
+  final List<dynamic> events = plant['events'];
+
+  Map<DateTime, List<String>> processedEvents = {};
+
+  for (var task in events) {
+    final eventDate =
+        plantingDate.add(Duration(days: task['daysAfterPlanting']));
+    final normalizedDate =
+        DateTime(eventDate.year, eventDate.month, eventDate.day);
+
+    if (processedEvents[normalizedDate] == null) {
+      processedEvents[normalizedDate] = [];
+    }
+
+    processedEvents[normalizedDate]!.add(
+      '$plantName\n'
+      '$cropType\n\n'
+      'Event: ${task['event']}\n\n'
+      'Note: ${task['note']}',
+    );
+  }
+
+  return processedEvents;
 }

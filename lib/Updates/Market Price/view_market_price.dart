@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart'; // Import Cupertino icons
-import 'add_market_price.dart'; // Import the AddMarketPrice page
+import 'edit_price_screen.dart'; // Import the EditPriceScreen page
 
 class ViewMarketPrice extends StatefulWidget {
   const ViewMarketPrice({super.key});
@@ -137,19 +137,40 @@ class _ViewMarketPriceState extends State<ViewMarketPrice> {
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text(
-                                      item['product_name'],
-                                      style: const TextStyle(
-                                        fontSize: 16.0,
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          item['product_name'],
+                                          style: const TextStyle(
+                                            fontSize: 16.0,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          _formatDate(item['date']),
+                                          style: const TextStyle(
+                                            fontSize: 12.0,
+                                            color: Colors.grey,
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                    Text(
-                                      _formatDate(item['date']),
-                                      style: const TextStyle(
-                                        fontSize: 12.0,
-                                        color: Colors.grey,
-                                      ),
+                                    IconButton(
+                                      icon: const Icon(CupertinoIcons.pencil,
+                                          size: 16, color: Colors.grey),
+                                      onPressed: () {
+                                        // Navigate to the edit screen or open a dialog
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                EditPriceScreen(item: item),
+                                          ),
+                                        );
+                                      },
                                     ),
                                   ],
                                 ),
