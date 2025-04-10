@@ -43,7 +43,7 @@ class AboutUsPage extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 16,
                     fontFamily: 'Poppins',
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.normal,
                     decoration: TextDecoration.none,
                     color: CupertinoColors.systemGrey,
                   ),
@@ -64,7 +64,7 @@ class AboutUsPage extends StatelessWidget {
                   "To revolutionize agriculture through technology, making farming more efficient, sustainable, and profitable for everyone.",
                   style: TextStyle(
                     fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.normal,
                     fontFamily: 'Poppins',
                     decoration: TextDecoration.none,
                     color: CupertinoColors.systemGrey,
@@ -86,8 +86,8 @@ class AboutUsPage extends StatelessWidget {
                   "AgriTek is a comprehensive digital solution designed to support and modernize agriculture for farmers, agricultural workers, and emerging growers. Built with the goal of enhancing productivity and promoting sustainable farming, Agritek combines research-based agricultural knowledge with accessible mobile technology.",
                   style: TextStyle(
                     fontSize: 16,
-                    fontWeight: FontWeight.bold,
                     fontFamily: 'Poppins',
+                    fontWeight: FontWeight.normal,
                     decoration: TextDecoration.none,
                     color: CupertinoColors.systemGrey,
                   ),
@@ -98,6 +98,7 @@ class AboutUsPage extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 16,
                     fontFamily: 'Poppins',
+                    fontWeight: FontWeight.normal,
                     decoration: TextDecoration.none,
                     color: CupertinoColors.systemGrey,
                   ),
@@ -123,6 +124,7 @@ class AboutUsPage extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 16,
                     fontFamily: 'Poppins',
+                    fontWeight: FontWeight.normal,
                     decoration: TextDecoration.none,
                     color: CupertinoColors.systemGrey,
                   ),
@@ -144,6 +146,7 @@ class AboutUsPage extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 16,
                     fontFamily: 'Poppins',
+                    fontWeight: FontWeight.normal,
                     decoration: TextDecoration.none,
                     color: CupertinoColors.systemGrey,
                   ),
@@ -165,6 +168,7 @@ class AboutUsPage extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 16,
                     fontFamily: 'Poppins',
+                    fontWeight: FontWeight.normal,
                     decoration: TextDecoration.none,
                     color: CupertinoColors.systemGrey,
                   ),
@@ -175,6 +179,7 @@ class AboutUsPage extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 16,
                     fontFamily: 'Poppins',
+                    fontWeight: FontWeight.normal,
                     decoration: TextDecoration.none,
                     color: CupertinoColors.systemGrey,
                   ),
@@ -199,6 +204,7 @@ class AboutUsPage extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 16,
                     fontFamily: 'Poppins',
+                    fontWeight: FontWeight.normal,
                     decoration: TextDecoration.none,
                     color: CupertinoColors.systemGrey,
                   ),

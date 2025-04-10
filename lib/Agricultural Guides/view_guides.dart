@@ -1,4 +1,4 @@
-// ignore_for_file: depend_on_referenced_packages, unnecessary_to_list_in_spreads, library_private_types_in_public_api, unnecessary_null_comparison
+// ignore_for_file: depend_on_referenced_packages, unnecessary_to_list_in_spreads, library_private_types_in_public_api, unnecessary_null_comparison, use_build_context_synchronously
 
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -498,17 +498,17 @@ class InfoViewer extends StatelessWidget {
               }
             },
           ),
-          IconButton(
-            icon: const Icon(Icons.edit),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => EditInfoPage(docId: docId),
-                ),
-              );
-            },
-          ),
+          // IconButton(
+          //   icon: const Icon(Icons.edit),
+          //   onPressed: () {
+          //     Navigator.push(
+          //       context,
+          //       MaterialPageRoute(
+          //         builder: (context) => EditInfoPage(docId: docId),
+          //       ),
+          //     );
+          //   },
+          // ),
         ],
       ),
       body: FutureBuilder<DocumentSnapshot>(

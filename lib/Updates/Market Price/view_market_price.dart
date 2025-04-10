@@ -158,20 +158,20 @@ class _ViewMarketPriceState extends State<ViewMarketPrice> {
                                         ),
                                       ],
                                     ),
-                                    IconButton(
-                                      icon: const Icon(CupertinoIcons.pencil,
-                                          size: 16, color: Colors.grey),
-                                      onPressed: () {
-                                        // Navigate to the edit screen or open a dialog
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) =>
-                                                EditPriceScreen(item: item),
-                                          ),
-                                        );
-                                      },
-                                    ),
+                                    // IconButton(
+                                    //   icon: const Icon(CupertinoIcons.pencil,
+                                    //       size: 16, color: Colors.grey),
+                                    //   onPressed: () {
+                                    //     // Navigate to the edit screen or open a dialog
+                                    //     Navigator.push(
+                                    //       context,
+                                    //       MaterialPageRoute(
+                                    //         builder: (context) =>
+                                    //             EditPriceScreen(item: item),
+                                    //       ),
+                                    //     );
+                                    //   },
+                                    // ),
                                   ],
                                 ),
                                 const SizedBox(height: 4),

@@ -16,7 +16,8 @@ class TermsAndConditionsPage extends StatelessWidget {
           onPressed: () {
             Navigator.pop(context); // Navigate back to the previous screen
           },
-          child: const Icon(CupertinoIcons.back, color: CupertinoColors.activeGreen),
+          child: const Icon(CupertinoIcons.back,
+              color: CupertinoColors.activeGreen),
         ),
       ),
       child: const SafeArea(

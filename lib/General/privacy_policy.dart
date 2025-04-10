@@ -43,6 +43,7 @@ class PrivacyPolicyPage extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 16,
                     fontFamily: 'Poppins',
+                    fontWeight: FontWeight.normal,
                     decoration: TextDecoration.none,
                     color: CupertinoColors.systemGrey,
                   ),
@@ -53,6 +54,7 @@ class PrivacyPolicyPage extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 16,
                     fontFamily: 'Poppins',
+                    fontWeight: FontWeight.normal,
                     decoration: TextDecoration.none,
                     color: CupertinoColors.systemGrey,
                   ),
@@ -74,6 +76,7 @@ class PrivacyPolicyPage extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 16,
                     fontFamily: 'Poppins',
+                    fontWeight: FontWeight.normal,
                     decoration: TextDecoration.none,
                     color: CupertinoColors.systemGrey,
                   ),
@@ -95,6 +98,7 @@ class PrivacyPolicyPage extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 16,
                     fontFamily: 'Poppins',
+                    fontWeight: FontWeight.normal,
                     decoration: TextDecoration.none,
                     color: CupertinoColors.systemGrey,
                   ),
@@ -116,6 +120,7 @@ class PrivacyPolicyPage extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 16,
                     fontFamily: 'Poppins',
+                    fontWeight: FontWeight.normal,
                     decoration: TextDecoration.none,
                     color: CupertinoColors.systemGrey,
                   ),
@@ -137,6 +142,7 @@ class PrivacyPolicyPage extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 16,
                     fontFamily: 'Poppins',
+                    fontWeight: FontWeight.normal,
                     decoration: TextDecoration.none,
                     color: CupertinoColors.systemGrey,
                   ),
@@ -158,6 +164,7 @@ class PrivacyPolicyPage extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 16,
                     fontFamily: 'Poppins',
+                    fontWeight: FontWeight.normal,
                     decoration: TextDecoration.none,
                     color: CupertinoColors.systemGrey,
                   ),
@@ -183,6 +190,7 @@ class PrivacyPolicyPage extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 16,
                     fontFamily: 'Poppins',
+                    fontWeight: FontWeight.normal,
                     decoration: TextDecoration.none,
                     color: CupertinoColors.systemGrey,
                   ),

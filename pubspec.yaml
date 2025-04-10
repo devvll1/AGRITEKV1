@@ -56,7 +56,7 @@ dependencies:
   flutter_pdfview: ^1.4.0
   path_provider: ^2.1.5
   open_file: ^3.5.10
-  flutter_timezone: ^4.1.0
+  flutter_timezone: ^3.0.1
 
 dev_dependencies:
   flutter_test:
