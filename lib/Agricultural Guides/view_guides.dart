@@ -6,10 +6,20 @@ import 'package:image_picker/image_picker.dart'; // For image picking
 import 'dart:io'; // For handling file paths
 import 'package:firebase_storage/firebase_storage.dart'; // For Firebase Storage
 import 'package:path/path.dart'; // For handling file paths
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter_pdfview/flutter_pdfview.dart';
+import 'package:http/http.dart' as http;
+import 'package:printing/printing.dart';
 
 class ViewGuides extends StatelessWidget {
   // Renamed from ViewCrops to ViewGuides
   const ViewGuides({super.key});
+
+  Future<void> _refreshData() async {
+    // Logic to refresh data
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -20,66 +30,77 @@ class ViewGuides extends StatelessWidget {
     ];
 
     return Scaffold(
+      backgroundColor: const Color(0xFFE8F5E9), // Light green background
       appBar: AppBar(
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(
+            bottom: Radius.circular(16),
+          ),
+        ),
+        elevation: 4,
+        backgroundColor: const Color(0xFF2E7D32),
         title: const Text('Branch of Agriculture'),
       ),
-      body: ListView.builder(
-        itemCount: agricultureCategories.length,
-        itemBuilder: (context, index) {
-          final category = agricultureCategories[index];
-          return GestureDetector(
-            onTap: () {
-              if (category['name'] == 'Crop Farming') {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const CropFarmingViewer(),
-                  ),
-                );
-              } else {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) =>
-                        TitleViewer(category: category['name']!),
-                  ),
-                );
-              }
-            },
-            child: Container(
-              height: 150, // Enlarged height for each item
-              margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                image: DecorationImage(
-                  image: AssetImage(category['image']!),
-                  fit: BoxFit.cover,
-                ),
-              ),
-              child: Stack(
-                children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      color: Colors.black
-                          .withOpacity(0.4), // Dark overlay for text visibility
+      body: RefreshIndicator(
+        onRefresh: _refreshData, // Define a method to refresh data
+        child: ListView.builder(
+          itemCount: agricultureCategories.length,
+          itemBuilder: (context, index) {
+            final category = agricultureCategories[index];
+            return GestureDetector(
+              onTap: () {
+                if (category['name'] == 'Crop Farming') {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const CropFarmingViewer(),
                     ),
+                  );
+                } else {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          TitleViewer(category: category['name']!),
+                    ),
+                  );
+                }
+              },
+              child: Container(
+                height: 150, // Enlarged height for each item
+                margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  image: DecorationImage(
+                    image: AssetImage(category['image']!),
+                    fit: BoxFit.cover,
                   ),
-                  Center(
-                    child: Text(
-                      category['name']!,
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                ),
+                child: Stack(
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        color: Colors.black.withOpacity(
+                            0.4), // Dark overlay for text visibility
                       ),
                     ),
-                  ),
-                ],
+                    Center(
+                      child: Text(
+                        category['name']!,
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
@@ -107,6 +128,13 @@ class CropFarmingViewer extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(
+            bottom: Radius.circular(16),
+          ),
+        ),
+        elevation: 4,
+        backgroundColor: const Color(0xFF2E7D32),
         title: const Text('Crop Farming'),
       ),
       body: ListView.builder(
@@ -176,11 +204,25 @@ class TitleViewer extends StatefulWidget {
 
 class _TitleViewerState extends State<TitleViewer> {
   String searchQuery = '';
+  bool isLoading = false;
 
   @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(
+            bottom: Radius.circular(16),
+          ),
+        ),
+        elevation: 4,
+        backgroundColor: const Color(0xFF2E7D32),
         title: Text(widget.cropCategory ?? widget.category),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(56.0),
@@ -290,12 +332,172 @@ class InfoViewer extends StatelessWidget {
 
   const InfoViewer({super.key, required this.docId});
 
+  Future<void> _downloadGuide(
+      BuildContext context, String title, List<dynamic> sections) async {
+    final pdf = pw.Document();
+
+    // Load the custom font
+    final fontData = await rootBundle.load('fonts/Roboto-Regular.ttf');
+    final ttf = pw.Font.ttf(fontData);
+
+    // Prefetch images
+    final List<Map<String, dynamic>> preprocessedSections = [];
+    for (var section in sections) {
+      final heading = section['heading'] ?? 'No Heading';
+      final content = section['content'] ?? 'No Content';
+      final images = section['images'] as List<dynamic>? ?? [];
+
+      // Download images as bytes
+      final List<pw.MemoryImage> imageWidgets = [];
+      for (var imageUrl in images) {
+        try {
+          final response = await http.get(Uri.parse(imageUrl));
+          if (response.statusCode == 200) {
+            final imageBytes = response.bodyBytes;
+            imageWidgets.add(pw.MemoryImage(imageBytes));
+          }
+        } catch (e) {
+          debugPrint('Error loading image: $e');
+        }
+      }
+
+      preprocessedSections.add({
+        'heading': heading,
+        'content': content,
+        'images': imageWidgets,
+      });
+    }
+
+    // Build the PDF
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        build: (pw.Context context) {
+          final widgets = <pw.Widget>[];
+
+          // Add the title
+          widgets.add(
+            pw.Text(
+              title,
+              style: pw.TextStyle(
+                fontSize: 24,
+                fontWeight: pw.FontWeight.bold,
+                font: ttf,
+              ),
+            ),
+          );
+          widgets.add(pw.SizedBox(height: 16));
+
+          // Add the sections
+          for (var section in preprocessedSections) {
+            final heading = section['heading'];
+            final content = section['content'];
+            final images = section['images'] as List<pw.MemoryImage>;
+
+            // Add the heading
+            widgets.add(
+              pw.Text(
+                heading,
+                style: pw.TextStyle(
+                  fontSize: 18,
+                  fontWeight: pw.FontWeight.bold,
+                  font: ttf,
+                ),
+              ),
+            );
+            widgets.add(pw.SizedBox(height: 8));
+
+            // Add the content
+            widgets.add(
+              pw.Text(
+                content,
+                style: pw.TextStyle(
+                  fontSize: 14,
+                  font: ttf,
+                ),
+              ),
+            );
+            widgets.add(pw.SizedBox(height: 8));
+
+            // Add the images
+            for (var image in images) {
+              widgets.add(
+                pw.Padding(
+                  padding: const pw.EdgeInsets.only(bottom: 8.0),
+                  child: pw.Image(
+                    image,
+                    fit: pw.BoxFit.contain,
+                    height: 150,
+                  ),
+                ),
+              );
+            }
+
+            widgets.add(pw.SizedBox(height: 16));
+          }
+
+          return widgets;
+        },
+      ),
+    );
+
+    // Use the `printing` package to preview and share the PDF
+    await Printing.layoutPdf(
+      onLayout: (PdfPageFormat format) async => pdf.save(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(
+            bottom: Radius.circular(16),
+          ),
+        ),
+        elevation: 4,
+        backgroundColor: const Color(0xFF2E7D32),
         title: const Text('Details'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.download),
+            onPressed: () async {
+              try {
+                // Fetch the guide data
+                final doc = await FirebaseFirestore.instance
+                    .collection('agriculture_guides')
+                    .doc(docId)
+                    .get();
+
+                if (!doc.exists) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Document does not exist.')),
+                  );
+                  return;
+                }
+
+                final data = doc.data() as Map<String, dynamic>;
+                final title = data['title'] ?? 'Untitled Guide';
+                final sections = data['sections'] as List<dynamic>? ?? [];
+
+                if (sections.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                        content: Text('No content available to download.')),
+                  );
+                  return;
+                }
+
+                // Generate and view the PDF
+                await _downloadGuide(context, title, sections);
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Error: $e')),
+                );
+              }
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.edit),
             onPressed: () {
@@ -515,16 +717,10 @@ class _EditInfoPageState extends State<EditInfoPage> {
     final data = doc.data() as Map<String, dynamic>;
     _titleController = TextEditingController(text: data['title']);
     _cropCategoryController = TextEditingController(text: data['cropCategory']);
-    _sections = (data['sections'] as List<dynamic>?)
-            ?.map((section) => {
-                  'heading': section['heading'] ?? '',
-                  'content': section['content'] ?? '',
-                  'images':
-                      (section['images'] as List<dynamic>?)?.cast<String>() ??
-                          [],
-                })
-            .toList() ??
-        [];
+    _sections = [
+      {"heading": "Section 1", "content": "This is the content of section 1."},
+      {"heading": "Section 2", "content": "This is the content of section 2."}
+    ];
     _images = (data['images'] as List<dynamic>?)?.cast<String>() ?? [];
   }
 
@@ -589,6 +785,13 @@ class _EditInfoPageState extends State<EditInfoPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(
+            bottom: Radius.circular(16),
+          ),
+        ),
+        elevation: 4,
+        backgroundColor: const Color(0xFF2E7D32),
         title: const Text('Edit Content'),
       ),
       body: FutureBuilder<void>(
@@ -609,7 +812,6 @@ class _EditInfoPageState extends State<EditInfoPage> {
               key: _formKey,
               child: ListView(
                 children: [
-                  // Title Field
                   TextFormField(
                     controller: _titleController,
                     decoration: const InputDecoration(labelText: 'Title'),
@@ -739,6 +941,51 @@ class _EditInfoPageState extends State<EditInfoPage> {
                 ],
               ),
             ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class PDFViewerScreen extends StatelessWidget {
+  final String pdfPath;
+
+  const PDFViewerScreen({super.key, required this.pdfPath});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('PDF Viewer'),
+        backgroundColor: const Color(0xFF2E7D32),
+      ),
+      body: FutureBuilder<bool>(
+        future: File(pdfPath).exists(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError || !snapshot.data!) {
+            return const Center(
+              child: Text('Failed to load PDF.'),
+            );
+          }
+          return PDFView(
+            filePath: pdfPath,
+            enableSwipe: true,
+            swipeHorizontal: false,
+            autoSpacing: true,
+            pageFling: true,
+            onRender: (pages) {
+              debugPrint('Document rendered with $pages pages.');
+            },
+            onError: (error) {
+              debugPrint('Error loading PDF: $error');
+            },
+            onPageError: (page, error) {
+              debugPrint('Error on page $page: $error');
+            },
           );
         },
       ),

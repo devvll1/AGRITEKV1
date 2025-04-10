@@ -233,16 +233,16 @@ class _ViewMarketPriceState extends State<ViewMarketPrice> {
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const AddMarketPrice()),
-          );
-        },
-        child: const Icon(CupertinoIcons.add),
-        tooltip: 'Add Market Price',
-      ),
+      // floatingActionButton: FloatingActionButton(
+      //   onPressed: () {
+      //     Navigator.push(
+      //       context,
+      //       MaterialPageRoute(builder: (context) => const AddMarketPrice()),
+      //     );
+      //   },
+      //   child: const Icon(CupertinoIcons.add),
+      //   tooltip: 'Add Market Price',
+      // ),
     );
   }
 

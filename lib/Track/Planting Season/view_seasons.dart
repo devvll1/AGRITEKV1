@@ -1,4 +1,4 @@
-// ignore_for_file: unnecessary_to_list_in_spreads
+// ignore_for_file: unnecessary_to_list_in_spreads, library_private_types_in_public_api
 
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -18,8 +18,8 @@ class _ViewSeasonsState extends State<ViewSeasons> {
   String _selectedCropType = 'All Crop Types';
   String _searchQuery = '';
 
-  List<String> _climates = ['All Climates'];
-  List<String> _cropTypes = ['All Crop Types'];
+  final List<String> _climates = ['All Climates'];
+  final List<String> _cropTypes = ['All Crop Types'];
 
   @override
   void initState() {

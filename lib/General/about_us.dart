@@ -28,7 +28,7 @@ class AboutUsPage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "About Agritek",
+                  "About AgriTek",
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -43,6 +43,7 @@ class AboutUsPage extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 16,
                     fontFamily: 'Poppins',
+                    fontWeight: FontWeight.bold,
                     decoration: TextDecoration.none,
                     color: CupertinoColors.systemGrey,
                   ),
@@ -63,6 +64,7 @@ class AboutUsPage extends StatelessWidget {
                   "To revolutionize agriculture through technology, making farming more efficient, sustainable, and profitable for everyone.",
                   style: TextStyle(
                     fontSize: 16,
+                    fontWeight: FontWeight.bold,
                     fontFamily: 'Poppins',
                     decoration: TextDecoration.none,
                     color: CupertinoColors.systemGrey,
@@ -70,7 +72,7 @@ class AboutUsPage extends StatelessWidget {
                 ),
                 SizedBox(height: 20),
                 Text(
-                  "Agritek: A Mobile App for Effective Farming and Agricultural Practices",
+                  "AgriTek: A Mobile App for Effective Farming and Agricultural Practices",
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -81,9 +83,10 @@ class AboutUsPage extends StatelessWidget {
                 ),
                 SizedBox(height: 10),
                 Text(
-                  "Agritek is a comprehensive digital solution designed to support and modernize agriculture for farmers, agricultural workers, and emerging growers. Built with the goal of enhancing productivity and promoting sustainable farming, Agritek combines research-based agricultural knowledge with accessible mobile technology.",
+                  "AgriTek is a comprehensive digital solution designed to support and modernize agriculture for farmers, agricultural workers, and emerging growers. Built with the goal of enhancing productivity and promoting sustainable farming, Agritek combines research-based agricultural knowledge with accessible mobile technology.",
                   style: TextStyle(
                     fontSize: 16,
+                    fontWeight: FontWeight.bold,
                     fontFamily: 'Poppins',
                     decoration: TextDecoration.none,
                     color: CupertinoColors.systemGrey,

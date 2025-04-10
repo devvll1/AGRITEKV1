@@ -342,16 +342,16 @@ class _HomePageState extends State<HomePage> {
                   },
                   itemBuilder: (BuildContext context) {
                     return [
-                      const PopupMenuItem<String>(
-                        value: 'signOut',
-                        child: Text("Sign Out",
-                            style: TextStyle(fontFamily: 'Poppins')),
-                      ),
-                      const PopupMenuItem<String>(
-                        value: 'addInformation',
-                        child: Text("Add Information",
-                            style: TextStyle(fontFamily: 'Poppins')),
-                      ),
+                      // const PopupMenuItem<String>(
+                      //   value: 'signOut',
+                      //   child: Text("Sign Out",
+                      //       style: TextStyle(fontFamily: 'Poppins')),
+                      // ),
+                      // const PopupMenuItem<String>(
+                      //   value: 'addInformation',
+                      //   child: Text("Add Information",
+                      //       style: TextStyle(fontFamily: 'Poppins')),
+                      // ),
                       const PopupMenuItem<String>(
                         value: 'aboutUs',
                         child: Text("About Us",

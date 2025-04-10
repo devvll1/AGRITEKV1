@@ -179,19 +179,19 @@ class _CalendarScreenState extends State<CalendarScreen> {
               _showPlantSelectionDialog(); // Opens the plant selection dialog
             },
           ),
-          SpeedDialChild(
-            child: const Icon(Icons.add_circle),
-            label: 'Add Plant',
-            backgroundColor: Colors.green,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const PlantTrackerPage(),
-                ),
-              );
-            },
-          ),
+          // SpeedDialChild(
+          //   child: const Icon(Icons.add_circle),
+          //   label: 'Add Plant',
+          //   backgroundColor: Colors.green,
+          //   onTap: () {
+          //     Navigator.push(
+          //       context,
+          //       MaterialPageRoute(
+          //         builder: (context) => const PlantTrackerPage(),
+          //       ),
+          //     );
+          //   },
+          // ),
           SpeedDialChild(
             child: const Icon(Icons.info),
             label: 'View Seasons',
@@ -206,20 +206,20 @@ class _CalendarScreenState extends State<CalendarScreen> {
               );
             },
           ),
-          SpeedDialChild(
-            child: const Icon(Icons.add_box),
-            label: 'Add Season',
-            backgroundColor: const Color.fromARGB(255, 243, 160, 36),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) =>
-                      const AddSeasonInfo(), // Ensure ViewSeasons is imported
-                ),
-              );
-            },
-          ),
+          // SpeedDialChild(
+          //   child: const Icon(Icons.add_box),
+          //   label: 'Add Season',
+          //   backgroundColor: const Color.fromARGB(255, 243, 160, 36),
+          //   onTap: () {
+          //     Navigator.push(
+          //       context,
+          //       MaterialPageRoute(
+          //         builder: (context) =>
+          //             const AddSeasonInfo(), // Ensure ViewSeasons is imported
+          //       ),
+          //     );
+          //   },
+          // ),
         ],
       ),
     );
