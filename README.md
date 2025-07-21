@@ -41,9 +41,8 @@ AgriTek is a mobile application built with Flutter that empowers Filipino farmer
 
 ## 🎥 Project Pitch Video
 
-Click below to watch the project pitch:
+📽️ [Click here to watch the AgriTek pitching video](https://drive.google.com/file/d/1Ex2vpVV6YkuQA5UYGy4mXbSUrHxfu2lK/view?usp=drive_link)
 
-[![Watch the Video](https://img.youtube.com/vi/VIDEO_ID/maxresdefault.jpg)](https://drive.google.com/file/d/1Ex2vpVV6YkuQA5UYGy4mXbSUrHxfu2lK/view?usp=drive_link)
 
 
 ---
