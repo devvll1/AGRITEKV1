@@ -2,7 +2,7 @@
 
 AgriTek is a mobile application built with Flutter that empowers Filipino farmers and agricultural enthusiasts with step-by-step guides, forums, weather forecasts, and plant tracking features. Designed to promote smart and sustainable farming, the app serves as a digital companion for modern agriculture.
 
-![AgriTek Logo](https://your-image-url.com/logo.png) <!-- Replace with actual logo URL or local asset -->
+<!-- Replace with actual logo URL or local asset -->
 
 ---
 
@@ -39,10 +39,12 @@ AgriTek is a mobile application built with Flutter that empowers Filipino farmer
 
 ---
 
-## 🖼️ Video
+## 🎥 Project Pitch Video
 
-<!-- Upload screenshots and replace the links -->
-| ![Video](https://drive.google.com/file/d/1Ex2vpVV6YkuQA5UYGy4mXbSUrHxfu2lK/view?usp=drive_link) |
+Click below to watch the project pitch:
+
+[![Watch the Video](https://img.youtube.com/vi/VIDEO_ID/maxresdefault.jpg)](https://drive.google.com/file/d/1Ex2vpVV6YkuQA5UYGy4mXbSUrHxfu2lK/view?usp=drive_link)
+
 
 ---
 
